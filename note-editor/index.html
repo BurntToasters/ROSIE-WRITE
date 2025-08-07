@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROSIE-WRITE | Note Editor</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="v1.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="glass-panel">
+            <center><img src="assets/ROSIE-WRITE-logo.webp" alt="ROSIE-WRITE Logo" class="headerLogo"></center>
+            <h1>ROSIE-WRITE</h1>
+            <div class="note-controls">
+                <input type="text" id="noteTitle" placeholder="Note Title" class="glass-input">
+                <div class="note-actions">
+                    <button id="newNote" class="glass-btn" title="New Note"><i class="fas fa-plus"></i> New</button>
+                    <select id="noteSelector" class="glass-select" title="Select Note">
+                        <option value="">Select a note...</option>
+                    </select>
+                    <button id="deleteNote" class="glass-btn danger" title="Delete Note"><i class="fas fa-trash"></i></button>
+                    <button id="deleteAllNotes" class="glass-btn danger" title="Delete All Notes"><i class="fas fa-trash-alt"></i> Delete All</button>
+                </div>
+            </div>
+            <div class="toolbar glass-panel">
+                <div class="format-group">
+                    <button id="boldBtn" class="glass-btn" title="Bold (Ctrl+B)"><i class="fas fa-bold"></i></button>
+                    <button id="italicBtn" class="glass-btn" title="Italic (Ctrl+I)"><i class="fas fa-italic"></i></button>
+                    <button id="underlineBtn" class="glass-btn" title="Underline (Ctrl+U)"><i class="fas fa-underline"></i></button>
+                    <div class="divider"></div>
+                    <button id="headingBtn" class="glass-btn" title="Heading"><i class="fas fa-heading"></i></button>
+                    <button id="listBtn" class="glass-btn" title="Bullet List"><i class="fas fa-list-ul"></i></button>
+                    <button id="numListBtn" class="glass-btn" title="Numbered List"><i class="fas fa-list-ol"></i></button>
+                </div>
+                <div class="format-group">
+                    <button id="undoBtn" class="glass-btn" title="Undo (Ctrl+Z)"><i class="fas fa-undo"></i></button>
+                    <button id="redoBtn" class="glass-btn" title="Redo (Ctrl+Y)"><i class="fas fa-redo"></i></button>
+                </div>
+            </div>
+        </header>
+        
+        <main>
+            <div id="noteArea" class="note-editor glass-panel" contenteditable="true" placeholder="Start writing your note..."></div>
+        </main>
+
+        <footer class="glass-panel">
+            <div class="status-bar">
+                <span id="saveStatus">All changes saved</span>
+                <a href="/about" class="about-link">About</a>
+                <a href="https://github.com/BurntToasters/ROSIE-WRITE" class="version-indicator">v1.0.0</a>
+                <div class="actions">
+                    <a href="https://github.com/BurntToasters/ROSIE-WRITE" style="text-decoration: none;" class="glass-btn small" title="View on GitHub"><i class="fab fa-github"></i></a>
+                    <button id="exportBtn" class="glass-btn small" title="Export Note"><i class="fas fa-download"></i></button>
+                    <label for="importFile" class="glass-btn small" title="Import Note"><i class="fas fa-upload"></i></label>
+                    <input type="file" id="importFile" accept=".txt,.html" hidden>
+                    <button id="toggleTheme" class="glass-btn small" title="Toggle Theme"><i class="fas fa-moon"></i></button>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="scr.js"></script>
+
+    <!-- Export -->
+    <div id="exportFormatDialog" class="dialog-overlay">
+        <div class="dialog glass-panel">
+            <h3>Export Format</h3>
+            <p>Choose the format to export your note:</p>
+            <div class="format-options">
+                <button data-format="html" class="glass-btn format-btn">
+                    <i class="fas fa-code"></i> HTML (.html)
+                    <span class="format-desc">Preserves all formatting and structure</span>
+                </button>
+                <button data-format="txt" class="glass-btn format-btn">
+                    <i class="fas fa-file-alt"></i> Plain Text (.txt)
+                    <span class="format-desc">Text only, no formatting</span>
+                </button>
+                <button data-format="rtf" class="glass-btn format-btn">
+                    <i class="fas fa-file-word"></i> Rich Text (.rtf)
+                    <span class="format-desc">Preserves basic formatting</span>
+                </button>
+            </div>
+            <div class="dialog-actions">
+                <button id="cancelExport" class="glass-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

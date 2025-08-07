@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROSIE-WRITE | About</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="v1.css">
+    <style>
+        .about-content {
+            padding: 25px;
+            font-size: 1.1em;
+            line-height: 1.6;
+            text-align: left;
+        }
+        
+        .feature-list {
+            margin: 20px 0;
+            padding-left: 20px;
+        }
+        
+        .feature-list li {
+            margin-bottom: 10px;
+            list-style-type: none;
+            position: relative;
+            padding-left: 30px;
+        }
+        
+        .feature-list li:before {
+            content: "\f058";
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            position: absolute;
+            left: 0;
+            color: var(--accent-color);
+        }
+        
+        .section-title {
+            margin: 30px 0 15px;
+            font-weight: 400;
+            font-size: 1.8em;
+            color: var(--accent-color);
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 10px;
+        }
+        
+        .button-container {
+            display: flex;
+            justify-content: center;
+            margin: 30px 0;
+            gap: 15px;
+        }
+        
+        .return-btn {
+            padding: 10px 20px;
+            font-size: 1.1em;
+        }
+        
+        .about-footer {
+            font-size: 0.9em;
+            opacity: 0.8;
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        
+        #noteSelector {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header class="glass-panel">
+            <center><a href="/"><img src="assets/ROSIE-WRITE-logo.webp" alt="ROSIE-WRITE Logo" class="headerLogo"></a></center>
+            <h1>About ROSIE-WRITE</h1>
+            
+           
+            <select id="noteSelector" hidden></select>
+        </header>
+        
+        <main>
+            <div class="glass-panel about-content">
+                <p>
+                    ROSIE-WRITE is a lightweight, browser-based note-taking application designed for simplicity and ease of use.
+                    It runs entirely in your browser and saves all your notes locally within your browser's local storage.
+                </p>
+                
+                <h2 class="section-title">Features</h2>
+                <ul class="feature-list">
+                    <li>Clean, modern interface.</li>
+                    <li>Simple format options for quick note taking.</li>
+                    <li>Autosave - Peace of mind with auto save constanly saving your work in the background.</li>
+                </ul>
+                
+                <h2 class="section-title">Privacy First</h2>
+                <p>
+                    Your notes are stored exclusively in your browser's local storage. This means:
+                </p>
+                <ul class="feature-list">
+                    <li>Your note data never leaves your computer</li>
+                    <li>No tracking or analytics. Your content is your content. Simple as that.</li>
+                    <li>Open source! Rosie Write is open source. Check out the source code <a style="color: lightcoral;" href="#">here on github</a>.</li>
+                </ul>
+                
+                <h2 class="section-title">More Info</h2>
+                    <p>ROSIE NOTES uses Cloudflare to easily deliver the web app and cache content, decreasing load on the origin. Cloudflare analytics are also in use to preserve user privacy while also allowing us to see the amount of visitors to the site.</p>
+                    <hr style="margin-top: 10px; margin-bottom: 15px;">
+                    
+                    <blockquote><p><i>"Cloudflare Web Analytics does not use any client-side state, such as cookies or localStorage, to collect usage metrics. <br>We also don’t “fingerprint” individuals via their IP address, User Agent string, or any other data for the purpose of displaying analytics. <br> Our analytics are non-invasive and respect the privacy of your visitors."</i></p>
+                    <cite><a href="https://www.cloudflare.com/web-analytics/" style="color: lightcoral;">Cloudflare</a></cite></blockquote>
+                <h2 class="section-title">Getting Started</h2>
+                <p>
+                    Using ROSIE-WRITE is simple - just start typing! Your notes are automatically saved as you write.
+                    You can create multiple notes, format your text with the toolbar buttons, and export your work when you're ready to share it.
+                </p>
+                
+                <div class="button-container">
+                    <a href="index.html" class="glass-btn return-btn">
+                        <i class="fas fa-edit"></i> Start Writing
+                    </a>
+                </div>
+                
+                <div class="about-footer">
+                    <p>ROSIE-WRITE is open source software released under the Mozilla Public License 2.0</p>
+                </div>
+            </div>
+        </main>
+
+        <footer class="glass-panel">
+            <div class="status-bar">
+                <span id="saveStatus">&copy; 2025 ROSIE-WRITE</span>
+                
+                <div class="actions">
+                    <button id="toggleTheme" class="glass-btn small" title="Toggle Theme"><i class="fas fa-moon"></i></button>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    
+    <script>
+       
+        document.addEventListener('DOMContentLoaded', function() {
+            const body = document.body;
+            const toggleThemeBtn = document.getElementById('toggleTheme');
+            const versionIndicator = document.querySelector('.version-indicator');
+            
+            
+            const isDarkMode = localStorage.getItem('rosieWriteDarkMode') === 'true';
+            
+      
+            if (isDarkMode) {
+                body.classList.add('dark-mode');
+                toggleThemeBtn.innerHTML = '<i class="fas fa-sun"></i>';
+            }
+            
+         
+            if (versionIndicator) {
+                versionIndicator.textContent = 'v1.0.0';
+            }
+            
+      
+            toggleThemeBtn.addEventListener('click', function() {
+                const currentDarkMode = body.classList.contains('dark-mode');
+                
+                if (currentDarkMode) {
+                    body.classList.remove('dark-mode');
+                    toggleThemeBtn.innerHTML = '<i class="fas fa-moon"></i>';
+                    localStorage.setItem('rosieWriteDarkMode', 'false');
+                } else {
+                    body.classList.add('dark-mode');
+                    toggleThemeBtn.innerHTML = '<i class="fas fa-sun"></i>';
+                    localStorage.setItem('rosieWriteDarkMode', 'true');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
