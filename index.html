@@ -48,8 +48,11 @@
         <footer class="glass-panel">
             <div class="status-bar">
                 <span id="saveStatus">All changes saved</span>
-                <a href="/about" class="about-link">About</a>
-                <a href="https://github.com/BurntToasters/ROSIE-WRITE/releases/latest" class="version-indicator">v1.0.0</a>
+                <div class="center-items">
+                    <a href="/about" class="about-link"><i class="fa-solid fa-circle-info"></i> About</a>
+                    <a href="https://help.rosie.run/contact" target="_blank" class="about-link"><i class="fa-solid fa-envelope"></i> Contact</a>
+                </div>
+                <a href="https://github.com/BurntToasters/ROSIE-WRITE/releases/latest" class="version-indicator">v1.0.1</a>
                 <div class="actions">
                     <a href="https://github.com/BurntToasters/ROSIE-WRITE" style="text-decoration: none;" class="glass-btn small" title="View on GitHub"><i class="fab fa-github"></i></a>
                     <button id="exportBtn" class="glass-btn small" title="Export Note"><i class="fas fa-download"></i></button>
@@ -79,7 +82,7 @@
                 </button>
                 <button data-format="rtf" class="glass-btn format-btn">
                     <i class="fas fa-file-word"></i> Rich Text (.rtf)
-                    <span class="format-desc">Preserves basic formatting</span>
+                    <span class="format-desc">Preserves basic formatting <br><span style="color: lightcoral;">(This file type can't be re-imported into ROSIE Write)</span></span>
                 </button>
             </div>
             <div class="dialog-actions">
