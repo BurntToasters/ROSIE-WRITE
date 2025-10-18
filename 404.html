@@ -104,29 +104,23 @@
         </footer>
     </div>
 
-    
     <script>
-       
         document.addEventListener('DOMContentLoaded', function() {
             const body = document.body;
             const toggleThemeBtn = document.getElementById('toggleTheme');
             const versionIndicator = document.querySelector('.version-indicator');
             
-            
             const isDarkMode = localStorage.getItem('rosieWriteDarkMode') === 'true';
             
-      
             if (isDarkMode) {
                 body.classList.add('dark-mode');
                 toggleThemeBtn.innerHTML = '<i class="fas fa-sun"></i>';
             }
             
-         
             if (versionIndicator) {
                 versionIndicator.textContent = 'v1.0.0';
             }
             
-      
             toggleThemeBtn.addEventListener('click', function() {
                 const currentDarkMode = body.classList.contains('dark-mode');
                 

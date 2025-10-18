@@ -48,6 +48,7 @@
         <footer class="glass-panel">
             <div class="status-bar">
                 <span id="saveStatus">All changes saved</span>
+                <span id="wordCount" class="word-count">0 words | 0 characters</span>
                 <div class="center-items">
                     <a href="/about" class="about-link"><i class="fa-solid fa-circle-info"></i> About</a>
                     <a href="https://help.rosie.run/contact" target="_blank" class="about-link"><i class="fa-solid fa-envelope"></i> Contact</a>
@@ -57,7 +58,7 @@
                     <a href="https://github.com/BurntToasters/ROSIE-WRITE" style="text-decoration: none;" class="glass-btn small" title="View on GitHub"><i class="fab fa-github"></i></a>
                     <button id="exportBtn" class="glass-btn small" title="Export Note"><i class="fas fa-download"></i></button>
                     <label for="importFile" class="glass-btn small" title="Import Note"><i class="fas fa-upload"></i></label>
-                    <input type="file" id="importFile" accept=".txt,.html" hidden>
+                    <input type="file" id="importFile" accept=".txt,.html,.md" hidden>
                     <button id="toggleTheme" class="glass-btn small" title="Toggle Theme"><i class="fas fa-moon"></i></button>
                 </div>
             </div>
@@ -66,7 +67,6 @@
 
     <script src="scr.js"></script>
 
-    <!-- Export -->
     <div id="exportFormatDialog" class="dialog-overlay">
         <div class="dialog glass-panel">
             <h3>Export Format</h3>
@@ -75,6 +75,10 @@
                 <button data-format="html" class="glass-btn format-btn">
                     <i class="fas fa-code"></i> HTML (.html)
                     <span class="format-desc">Preserves all formatting and structure</span>
+                </button>
+                <button data-format="md" class="glass-btn format-btn">
+                    <i class="fab fa-markdown"></i> Markdown (.md)
+                    <span class="format-desc">Universal format with formatting preserved</span>
                 </button>
                 <button data-format="txt" class="glass-btn format-btn">
                     <i class="fas fa-file-alt"></i> Plain Text (.txt)

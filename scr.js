@@ -16,13 +16,10 @@ const noteApp = {
     CHARACTER_CAPTURE_THRESHOLD: 5
 };
 
-//init blank objs
-
 const elements = {};
 
 const formatButtons = {};
 
-// init
 function initApp() {
     elements.noteArea = document.getElementById('noteArea'),
     elements.noteTitle = document.getElementById('noteTitle'),
@@ -39,7 +36,8 @@ function initApp() {
     elements.exportFormatDialog = document.getElementById('exportFormatDialog'),
     elements.cancelExport = document.getElementById('cancelExport'),
     elements.formatButtons = document.querySelectorAll('.format-btn'),
-    elements.deleteAllNotesBtn = document.getElementById('deleteAllNotes');
+    elements.deleteAllNotesBtn = document.getElementById('deleteAllNotes'),
+    elements.wordCount = document.getElementById('wordCount');
 
     formatButtons.bold = document.getElementById('boldBtn'),
     formatButtons.italic = document.getElementById('italicBtn'),
@@ -52,16 +50,15 @@ function initApp() {
     setupEventListeners();
     checkDarkModePreference();
     if (Object.keys(noteApp.notes).length > 0) {
-        // load the most recent
         loadMostRecentNote();
     } else {
-        // No existing notes -> create blank
         createNewNote();
     }
 
     elements.noteArea.addEventListener('input', (e) => {
         noteApp.isSaved = false;
         updateSaveStatus('Unsaved changes');
+        updateWordCount();
         clearTimeout(noteApp.saveTimeout);
         noteApp.saveTimeout = setTimeout(() => {
             saveCurrentNote();
@@ -95,13 +92,11 @@ function initApp() {
             e.key === ':' ||
             e.key === 'Enter' || 
             e.key === 'Tab') {
-            // reset char counter
             noteApp.characterCount = 0;
             setTimeout(() => captureState(), 0);
         }
     });
     
-    // capture state
     elements.noteArea.addEventListener('blur', () => {
         captureState();
         noteApp.characterCount = 0;
@@ -246,13 +241,11 @@ function undo() {
     console.log("Performing undo, stack size before:", noteApp.undoStack.length);
     noteApp.isUndoOperation = true;
     
-    // current state -> redo stack
     noteApp.redoStack.push({
         content: elements.noteArea.innerHTML,
         title: elements.noteTitle.value
     });
     
-    // previous state -> current
     const previousState = noteApp.undoStack.pop();
     elements.noteArea.innerHTML = previousState.content;
     elements.noteTitle.value = previousState.title;
@@ -277,13 +270,11 @@ function redo() {
     
     console.log("Performing redo, stack size before:", noteApp.redoStack.length);
     
-    // current -> undo stack
     noteApp.undoStack.push({
         content: elements.noteArea.innerHTML,
         title: elements.noteTitle.value
     });
     
-    // redo state
     const redoState = noteApp.redoStack.pop();
     elements.noteArea.innerHTML = redoState.content;
     elements.noteTitle.value = redoState.title;
@@ -327,7 +318,6 @@ function formatText(format) {
 function handleKeyboardShortcuts(e) {
     if (document.activeElement === elements.noteTitle) return;
     
-    // Format shortcuts
     if (e.ctrlKey) {
         switch (e.key.toLowerCase()) {
             case 'b':
@@ -401,6 +391,7 @@ function createNewNote() {
 
     noteApp.undoStack = [];
     noteApp.redoStack = [];
+    updateWordCount();
 }
 
 function loadMostRecentNote() {
@@ -418,9 +409,9 @@ function loadMostRecentNote() {
         updateNotesList();
         elements.noteSelector.value = mostRecent.id;
         
-        // reset undo/redo stacks
         noteApp.undoStack = [];
         noteApp.redoStack = [];
+        updateWordCount();
     }
 }
 
@@ -428,7 +419,6 @@ function switchNote() {
     const noteId = elements.noteSelector.value;
     if (!noteId) return;
     
-    // save current before switching
     if (noteApp.currentNoteId) {
         saveCurrentNote();
     }
@@ -441,6 +431,7 @@ function switchNote() {
 
         noteApp.undoStack = [];
         noteApp.redoStack = [];
+        updateWordCount();
     }
 }
 
@@ -511,7 +502,6 @@ function deleteAllNotes() {
 
     createNewNote();
     
-    // Del confirmation
     updateSaveStatus('All notes deleted');
     setTimeout(() => {
         updateSaveStatus('All changes saved');
@@ -545,6 +535,11 @@ function exportNote(format = 'html') {
             exportContent = convertToPlainText(content);
             mimeType = 'text/plain';
             fileExtension = 'txt';
+            break;
+        case 'md':
+            exportContent = convertToMarkdown(content);
+            mimeType = 'text/markdown';
+            fileExtension = 'md';
             break;
         case 'rtf':
             exportContent = convertToRtf(content, note.title);
@@ -610,9 +605,107 @@ function convertToPlainText(html) {
     return text;
 }
 
-// HTML to RTF
+function convertToMarkdown(html) {
+    const tempElement = document.createElement('div');
+    tempElement.innerHTML = html;
+
+    const processNode = (node, listType = null, listLevel = 0) => {
+        let result = '';
+        
+        if (node.nodeType === Node.TEXT_NODE) {
+            return node.textContent;
+        }
+        
+        if (node.nodeType === Node.ELEMENT_NODE) {
+            const tag = node.nodeName.toLowerCase();
+            let childContent = '';
+
+            for (const child of node.childNodes) {
+                if (tag === 'ul' || tag === 'ol') {
+                    if (child.nodeName.toLowerCase() === 'li') {
+                        childContent += processNode(child, tag, listLevel);
+                    } else {
+                        childContent += processNode(child, listType, listLevel);
+                    }
+                } else {
+                    childContent += processNode(child, listType, listLevel);
+                }
+            }
+
+            switch (tag) {
+                case 'h1':
+                    return '# ' + childContent.trim() + '\n\n';
+                case 'h2':
+                    return '## ' + childContent.trim() + '\n\n';
+                case 'h3':
+                    return '### ' + childContent.trim() + '\n\n';
+                case 'h4':
+                    return '#### ' + childContent.trim() + '\n\n';
+                case 'h5':
+                    return '##### ' + childContent.trim() + '\n\n';
+                case 'h6':
+                    return '###### ' + childContent.trim() + '\n\n';
+                case 'p':
+                    return childContent.trim() + '\n\n';
+                case 'br':
+                    return '\n';
+                case 'strong':
+                case 'b':
+                    return '**' + childContent + '**';
+                case 'em':
+                case 'i':
+                    return '*' + childContent + '*';
+                case 'u':
+                    return '<u>' + childContent + '</u>'; // Markdown doesn't have native underline
+                case 'ul':
+                    return childContent + '\n';
+                case 'ol':
+                    return childContent + '\n';
+                case 'li':
+                    const indent = '  '.repeat(listLevel);
+                    if (listType === 'ul') {
+                        return indent + '- ' + childContent.trim() + '\n';
+                    } else if (listType === 'ol') {
+                        return indent + '1. ' + childContent.trim() + '\n';
+                    }
+                    return '- ' + childContent.trim() + '\n';
+                case 'blockquote':
+                    return '> ' + childContent.trim().replace(/\n/g, '\n> ') + '\n\n';
+                case 'code':
+                    return '`' + childContent + '`';
+                case 'pre':
+                    return '```\n' + childContent + '\n```\n\n';
+                case 'a':
+                    const href = node.getAttribute('href') || '';
+                    return '[' + childContent + '](' + href + ')';
+                case 'img':
+                    const src = node.getAttribute('src') || '';
+                    const alt = node.getAttribute('alt') || '';
+                    return '![' + alt + '](' + src + ')';
+                case 'hr':
+                    return '\n---\n\n';
+                case 'div':
+                    if (childContent.trim()) {
+                        return childContent + '\n';
+                    }
+                    return childContent;
+                default:
+                    return childContent;
+            }
+        }
+        
+        return result;
+    };
+    
+    let markdown = processNode(tempElement);
+
+    markdown = markdown.replace(/\n{3,}/g, '\n\n');
+    markdown = markdown.trim();
+    
+    return markdown;
+}
+
 function convertToRtf(html, title) {
-    // RTF head
     let rtf = '{\\rtf1\\ansi\\ansicpg1252\\cocoartf2580\\cocoasubrtf220\n' +
               '{\\fonttbl\\f0\\fswiss\\fcharset0 Helvetica;}\n' +
               '{\\colortbl;\\red0\\green0\\blue0;}\n' +
@@ -749,9 +842,142 @@ function escapeRtf(text) {
         });
 }
 
+function convertMarkdownToHtml(markdown) {
+    let html = markdown;
+
+    html = html.replace(/```([\s\S]*?)```/g, function(match, code) {
+        const escapedCode = code
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+        return '<pre><code>' + escapedCode + '</code></pre>';
+    });
+
+    html = html.replace(/`([^`]+?)`/g, function(match, code) {
+        const escapedCode = code
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+        return '<code>' + escapedCode + '</code>';
+    });
+
+    html = html.replace(/^###### (.+)$/gm, '<h6>$1</h6>');
+    html = html.replace(/^##### (.+)$/gm, '<h5>$1</h5>');
+    html = html.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
+    html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+    html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+    html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+
+    html = html.replace(/^---$/gm, '<hr>');
+    html = html.replace(/^\*\*\*$/gm, '<hr>');
+
+    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
+
+    html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    html = html.replace(/_(.+?)_/g, '<em>$1</em>');
+
+    html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
+
+    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+
+    const ulLines = html.split('\n');
+    let inUl = false;
+    let ulResult = [];
+    
+    for (let i = 0; i < ulLines.length; i++) {
+        const line = ulLines[i];
+        const ulMatch = line.match(/^(\s*)[-*+] (.+)$/);
+        
+        if (ulMatch) {
+            if (!inUl) {
+                ulResult.push('<ul>');
+                inUl = true;
+            }
+            ulResult.push('<li>' + ulMatch[2] + '</li>');
+        } else {
+            if (inUl) {
+                ulResult.push('</ul>');
+                inUl = false;
+            }
+            ulResult.push(line);
+        }
+    }
+    if (inUl) {
+        ulResult.push('</ul>');
+    }
+    html = ulResult.join('\n');
+
+    const olLines = html.split('\n');
+    let inOl = false;
+    let olResult = [];
+    
+    for (let i = 0; i < olLines.length; i++) {
+        const line = olLines[i];
+        const olMatch = line.match(/^(\s*)\d+\. (.+)$/);
+        
+        if (olMatch) {
+            if (!inOl) {
+                olResult.push('<ol>');
+                inOl = true;
+            }
+            olResult.push('<li>' + olMatch[2] + '</li>');
+        } else {
+            if (inOl) {
+                olResult.push('</ol>');
+                inOl = false;
+            }
+            olResult.push(line);
+        }
+    }
+    if (inOl) {
+        olResult.push('</ol>');
+    }
+    html = olResult.join('\n');
+
+    const bqLines = html.split('\n');
+    let inBq = false;
+    let bqResult = [];
+    
+    for (let i = 0; i < bqLines.length; i++) {
+        const line = bqLines[i];
+        const bqMatch = line.match(/^> (.+)$/);
+        
+        if (bqMatch) {
+            if (!inBq) {
+                bqResult.push('<blockquote>');
+                inBq = true;
+            }
+            bqResult.push(bqMatch[1]);
+        } else {
+            if (inBq) {
+                bqResult.push('</blockquote>');
+                inBq = false;
+            }
+            bqResult.push(line);
+        }
+    }
+    if (inBq) {
+        bqResult.push('</blockquote>');
+    }
+    html = bqResult.join('\n');
+
+    html = html.split('\n\n').map(para => {
+        para = para.trim();
+        if (!para) return '';
+        if (para.match(/^<(h[1-6]|ul|ol|blockquote|pre|hr)/)) {
+            return para;
+        }
+        return '<p>' + para.replace(/\n/g, '<br>') + '</p>';
+    }).join('\n');
+
+    html = html.replace(/\n{3,}/g, '\n\n');
+
+    return html;
+}
+
 window.onload = initApp;
 
-// save status
 function updateSaveStatus(message) {
     if (!elements.saveStatus) return;
     
@@ -764,7 +990,22 @@ function updateSaveStatus(message) {
     }
 }
 
-// Import
+function updateWordCount() {
+    if (!elements.wordCount || !elements.noteArea) return;
+    
+    const text = elements.noteArea.innerText || elements.noteArea.textContent || '';
+    
+    const charCount = text.trim().length;
+    
+    let wordCount = 0;
+    if (text.trim().length > 0) {
+        const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+        wordCount = words.length;
+    }
+    
+    elements.wordCount.textContent = `${wordCount} ${wordCount === 1 ? 'word' : 'words'} | ${charCount} ${charCount === 1 ? 'character' : 'characters'}`;
+}
+
 function importNote(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -776,15 +1017,14 @@ function importNote(e) {
         const content = event.target.result;
         const fileExtension = file.name.split('.').pop().toLowerCase();
         
-       
         elements.noteTitle.value = file.name.replace(/\.[^/.]+$/, "");
         
         if (fileExtension === 'html') {
-            
             const bodyMatch = content.match(/<body[^>]*>([\s\S]*)<\/body>/i);
             elements.noteArea.innerHTML = bodyMatch ? bodyMatch[1] : content;
+        } else if (fileExtension === 'md' || fileExtension === 'markdown') {
+            elements.noteArea.innerHTML = convertMarkdownToHtml(content);
         } else {
-            // preserve line breaks
             elements.noteArea.innerHTML = content
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
@@ -794,19 +1034,14 @@ function importNote(e) {
         
         saveCurrentNote();
         updateNotesList();
+        updateWordCount();
     };
     
-    if (file.name.toLowerCase().endsWith('.html')) {
-        reader.readAsText(file);
-    } else {
-        reader.readAsText(file);
-    }
-    
+    reader.readAsText(file);
     
     e.target.value = '';
 }
 
-// save note
 window.onbeforeunload = function() {
     saveCurrentNote();
 };

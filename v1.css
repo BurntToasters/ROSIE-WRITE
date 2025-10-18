@@ -259,7 +259,7 @@ footer {
 
 .status-bar {
     display: grid;
-    grid-template-columns: 1fr auto auto 1fr;
+    grid-template-columns: 1fr auto auto auto 1fr;
     align-items: center;
     gap: 10px;
 }
@@ -272,6 +272,19 @@ footer {
 
 #saveStatus {
     justify-self: start;
+}
+
+.word-count {
+    font-size: 0.85em;
+    opacity: 0.7;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 3px 8px;
+    border-radius: 8px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    transition: all 0.3s ease;
+    color: var(--text-primary);
+    display: inline-block;
 }
 
 .actions {
@@ -442,7 +455,6 @@ footer {
     animation: pulse 1.5s infinite;
 }
 
-/* Dark mode adj */
 .dark-mode .headerLogo {
     filter: drop-shadow(0 0 5px rgba(0, 150, 255, 0.3));
 }
