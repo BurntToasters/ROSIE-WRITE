@@ -78,7 +78,7 @@ function initApp() {
                 noteApp.stateCapturePending = false;
                 noteApp.lastCaptureTime = Date.now();
                 noteApp.characterCount = 0; 
-            }, 50); // delay
+            }, 50);
         }
     });
 
@@ -107,6 +107,10 @@ function initApp() {
             captureState();
         }
     });
+
+    elements.noteArea.addEventListener('mouseup', updateFormatButtonStates);
+    elements.noteArea.addEventListener('keyup', updateFormatButtonStates);
+    elements.noteArea.addEventListener('click', updateFormatButtonStates);
 
     elements.noteTitle.addEventListener('input', () => {
         noteApp.isSaved = false;
@@ -313,6 +317,42 @@ function formatText(format) {
     noteApp.isSaved = false;
     updateSaveStatus('Unsaved changes');
     captureState();
+    updateFormatButtonStates();
+}
+
+function updateFormatButtonStates() {
+    const isBold = document.queryCommandState('bold');
+    formatButtons.bold.classList.toggle('active', isBold);
+
+    const isItalic = document.queryCommandState('italic');
+    formatButtons.italic.classList.toggle('active', isItalic);
+
+    const isUnderline = document.queryCommandState('underline');
+    formatButtons.underline.classList.toggle('active', isUnderline);
+
+    const isUnorderedList = document.queryCommandState('insertUnorderedList');
+    formatButtons.list.classList.toggle('active', isUnorderedList);
+    
+    const isOrderedList = document.queryCommandState('insertOrderedList');
+    formatButtons.numList.classList.toggle('active', isOrderedList);
+
+    const selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+        let node = selection.anchorNode;
+        if (node && node.nodeType === Node.TEXT_NODE) {
+            node = node.parentNode;
+        }
+        
+        let isHeading = false;
+        while (node && node !== elements.noteArea) {
+            if (node.tagName && /^H[1-6]$/.test(node.tagName)) {
+                isHeading = true;
+                break;
+            }
+            node = node.parentNode;
+        }
+        formatButtons.heading.classList.toggle('active', isHeading);
+    }
 }
 
 function handleKeyboardShortcuts(e) {
@@ -335,10 +375,12 @@ function handleKeyboardShortcuts(e) {
             case 'z':
                 e.preventDefault();
                 undo();
+                updateFormatButtonStates();
                 break;
             case 'y':
                 e.preventDefault();
                 redo();
+                updateFormatButtonStates();
                 break;
             case 's':
                 e.preventDefault();
@@ -656,7 +698,7 @@ function convertToMarkdown(html) {
                 case 'i':
                     return '*' + childContent + '*';
                 case 'u':
-                    return '<u>' + childContent + '</u>'; // Markdown doesn't have native underline
+                    return '<u>' + childContent + '</u>';
                 case 'ul':
                     return childContent + '\n';
                 case 'ol':

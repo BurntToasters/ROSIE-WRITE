@@ -73,6 +73,18 @@ body {
     justify-content: center;
 }
 
+.glass-btn.active {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    color: white;
+    box-shadow: 0 4px 16px rgba(79, 134, 247, 0.4);
+    transform: translateY(-1px);
+}
+
+.dark-mode .glass-btn.active {
+    box-shadow: 0 4px 16px rgba(98, 149, 248, 0.5);
+}
+
 .headerLogo {
     max-width: 20%;
     position: relative;
