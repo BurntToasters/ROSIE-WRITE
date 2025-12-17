@@ -1,4 +1,4 @@
-const APP_VERSION = "1.1.1";
+const APP_VERSION = "1.2.0";
 
 const noteApp = {
     currentNoteId: null,
@@ -13,7 +13,9 @@ const noteApp = {
     lastCaptureTime: Date.now(),
     characterCount: 0,
     STATE_CAPTURE_INTERVAL: 2000,
-    CHARACTER_CAPTURE_THRESHOLD: 5
+    CHARACTER_CAPTURE_THRESHOLD: 5,
+    currentFontSize: 12,
+    savedSelection: null
 };
 
 const elements = {};
@@ -37,18 +39,37 @@ function initApp() {
     elements.cancelExport = document.getElementById('cancelExport'),
     elements.formatButtons = document.querySelectorAll('.format-btn'),
     elements.deleteAllNotesBtn = document.getElementById('deleteAllNotes'),
-    elements.wordCount = document.getElementById('wordCount');
+    elements.wordCount = document.getElementById('wordCount'),
+    elements.noteSearch = document.getElementById('noteSearch'),
+    elements.alignLeftBtn = document.getElementById('alignLeftBtn'),
+    elements.alignCenterBtn = document.getElementById('alignCenterBtn'),
+    elements.alignRightBtn = document.getElementById('alignRightBtn'),
+    elements.fontDecreaseBtn = document.getElementById('fontDecreaseBtn'),
+    elements.fontIncreaseBtn = document.getElementById('fontIncreaseBtn'),
+    elements.fontSizeIndicator = document.getElementById('fontSizeIndicator'),
+    elements.linkBtn = document.getElementById('linkBtn'),
+    elements.imageBtn = document.getElementById('imageBtn'),
+    elements.imageInput = document.getElementById('imageInput'),
+    elements.linkDialog = document.getElementById('linkDialog'),
+    elements.linkText = document.getElementById('linkText'),
+    elements.linkUrl = document.getElementById('linkUrl'),
+    elements.insertLinkBtn = document.getElementById('insertLink'),
+    elements.cancelLinkBtn = document.getElementById('cancelLink');
 
     formatButtons.bold = document.getElementById('boldBtn'),
     formatButtons.italic = document.getElementById('italicBtn'),
     formatButtons.underline = document.getElementById('underlineBtn'),
     formatButtons.heading = document.getElementById('headingBtn'),
     formatButtons.list = document.getElementById('listBtn'),
-    formatButtons.numList = document.getElementById('numListBtn')
+    formatButtons.numList = document.getElementById('numListBtn'),
+    formatButtons.alignLeft = document.getElementById('alignLeftBtn'),
+    formatButtons.alignCenter = document.getElementById('alignCenterBtn'),
+    formatButtons.alignRight = document.getElementById('alignRightBtn')
 
     loadNotes();
     setupEventListeners();
     checkDarkModePreference();
+    loadFontSizePreference();
     if (Object.keys(noteApp.notes).length > 0) {
         loadMostRecentNote();
     } else {
@@ -154,11 +175,18 @@ function setupEventListeners() {
     });
 
     elements.toggleThemeBtn.addEventListener('click', toggleTheme);
-
     elements.undoBtn.addEventListener('click', undo);
     elements.redoBtn.addEventListener('click', redo);
-
     elements.deleteAllNotesBtn.addEventListener('click', confirmDeleteAllNotes);
+    elements.noteSearch.addEventListener('input', filterNotes);
+    elements.fontDecreaseBtn.addEventListener('click', () => changeFontSize(-1));
+    elements.fontIncreaseBtn.addEventListener('click', () => changeFontSize(1));
+    elements.linkBtn.addEventListener('click', showLinkDialog);
+    elements.insertLinkBtn.addEventListener('click', insertLink);
+    elements.cancelLinkBtn.addEventListener('click', hideLinkDialog);
+    elements.imageBtn.addEventListener('click', () => elements.imageInput.click());
+    elements.imageInput.addEventListener('change', handleImageUpload);
+    elements.noteArea.addEventListener('paste', handlePaste);
 
     document.addEventListener('keydown', handleKeyboardShortcuts);
 }
@@ -312,6 +340,15 @@ function formatText(format) {
         case 'numList':
             document.execCommand('insertOrderedList', false, null);
             break;
+        case 'alignLeft':
+            document.execCommand('justifyLeft', false, null);
+            break;
+        case 'alignCenter':
+            document.execCommand('justifyCenter', false, null);
+            break;
+        case 'alignRight':
+            document.execCommand('justifyRight', false, null);
+            break;
     }
     
     noteApp.isSaved = false;
@@ -335,6 +372,15 @@ function updateFormatButtonStates() {
     
     const isOrderedList = document.queryCommandState('insertOrderedList');
     formatButtons.numList.classList.toggle('active', isOrderedList);
+
+    const isJustifyLeft = document.queryCommandState('justifyLeft');
+    formatButtons.alignLeft.classList.toggle('active', isJustifyLeft);
+    
+    const isJustifyCenter = document.queryCommandState('justifyCenter');
+    formatButtons.alignCenter.classList.toggle('active', isJustifyCenter);
+    
+    const isJustifyRight = document.queryCommandState('justifyRight');
+    formatButtons.alignRight.classList.toggle('active', isJustifyRight);
 
     const selection = window.getSelection();
     if (selection.rangeCount > 0) {
@@ -385,6 +431,10 @@ function handleKeyboardShortcuts(e) {
             case 's':
                 e.preventDefault();
                 saveCurrentNote();
+                break;
+            case 'k':
+                e.preventDefault();
+                showLinkDialog();
                 break;
         }
     }
@@ -454,6 +504,7 @@ function loadMostRecentNote() {
         noteApp.undoStack = [];
         noteApp.redoStack = [];
         updateWordCount();
+        reinitializeImageHandlers();
     }
 }
 
@@ -474,6 +525,7 @@ function switchNote() {
         noteApp.undoStack = [];
         noteApp.redoStack = [];
         updateWordCount();
+        reinitializeImageHandlers();
     }
 }
 
@@ -561,12 +613,25 @@ function hideExportDialog() {
 
 function exportNote(format = 'html') {
     if (!noteApp.currentNoteId) return;
+    saveCurrentNote();
     
     const note = noteApp.notes[noteApp.currentNoteId];
     if (!note) return;
     
-    const title = note.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-    const content = note.content;
+    const title = note.title || 'Untitled';
+    const content = elements.noteArea.innerHTML;
+    
+    console.log('Exporting note:', title, 'Content length:', content.length);
+    
+    if (format === 'pdf') {
+        exportToPdf(title, content);
+        return;
+    }
+
+    if (format === 'docx') {
+        exportToRtf(title, content);
+        return;
+    }
     
     let exportContent;
     let mimeType;
@@ -583,24 +648,20 @@ function exportNote(format = 'html') {
             mimeType = 'text/markdown';
             fileExtension = 'md';
             break;
-        case 'rtf':
-            exportContent = convertToRtf(content, note.title);
-            mimeType = 'application/rtf';
-            fileExtension = 'rtf';
-            break;
         case 'html':
         default:
-            exportContent = content;
+            exportContent = createFullHtmlDocument(title, content);
             mimeType = 'text/html';
             fileExtension = 'html';
             break;
     }
 
+    const safeFilename = title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
     const blob = new Blob([exportContent], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${title}.${fileExtension}`;
+    a.download = `${safeFilename}.${fileExtension}`;
     document.body.appendChild(a);
     a.click();
 
@@ -608,6 +669,363 @@ function exportNote(format = 'html') {
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
     }, 100);
+}
+
+function createFullHtmlDocument(title, content) {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            color: #333;
+        }
+        img { max-width: 100%; height: auto; }
+        h1, h2, h3, h4, h5, h6 { margin-top: 1.5em; margin-bottom: 0.5em; }
+        p { margin: 1em 0; }
+        ul, ol { padding-left: 2em; }
+        a { color: #4f86f7; }
+    </style>
+</head>
+<body>
+    <h1>${title}</h1>
+    ${content}
+</body>
+</html>`;
+}
+
+function exportToPdf(title, content) {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = content;
+    const resizeContainers = tempDiv.querySelectorAll('.img-resize-container');
+    resizeContainers.forEach(container => {
+        const img = container.querySelector('img');
+        if (img) {
+            const newImg = img.cloneNode(true);
+            container.parentNode.replaceChild(newImg, container);
+        }
+    });
+    const cleanContent = tempDiv.innerHTML;
+
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    
+    if (!printWindow) {
+        alert('Please allow pop-ups to export PDF. You can also use your browser\'s Print function (Ctrl+P) and select "Save as PDF".');
+        return;
+    }
+    
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>${title}</title>
+            <style>
+                @media print {
+                    body { margin: 0; padding: 20mm; }
+                }
+                * { margin: 0; padding: 0; box-sizing: border-box; }
+                body { 
+                    font-family: Arial, Helvetica, sans-serif; 
+                    padding: 40px; 
+                    background: white; 
+                    color: #000;
+                    max-width: 800px;
+                    margin: 0 auto;
+                    line-height: 1.6;
+                }
+                h1 { margin-bottom: 20px; font-size: 28px; color: #000; }
+                h2 { margin: 20px 0 10px; font-size: 22px; }
+                h3 { margin: 15px 0 8px; font-size: 18px; }
+                p { margin: 10px 0; }
+                img { max-width: 100%; height: auto; display: block; margin: 15px 0; }
+                ul, ol { margin: 10px 0; padding-left: 30px; }
+                li { margin: 5px 0; }
+                .content { font-size: 14px; }
+                .print-instructions {
+                    background: #f0f0f0;
+                    padding: 15px;
+                    margin-bottom: 20px;
+                    border-radius: 5px;
+                    font-size: 14px;
+                }
+                .print-instructions button {
+                    background: #4f86f7;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    margin-right: 10px;
+                }
+                .print-instructions button:hover {
+                    background: #3a6fd8;
+                }
+                @media print {
+                    .print-instructions { display: none; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="print-instructions">
+                <p><strong>To save as PDF:</strong> Click the button below, then select "Save as PDF" as your printer.</p>
+                <button onclick="window.print()">Print / Save as PDF</button>
+                <button onclick="window.close()">Cancel</button>
+            </div>
+            <h1>${title}</h1>
+            <div class="content">${cleanContent}</div>
+            <script>
+                // Auto-print after a short delay to let images load
+                window.onload = function() {
+                    // Give images time to load
+                    setTimeout(function() {
+                        // Uncomment the next line to auto-trigger print dialog
+                        // window.print();
+                    }, 1000);
+                };
+            </script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+}
+
+function exportToRtf(title, content) {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = content;
+    const resizeContainers = tempDiv.querySelectorAll('.img-resize-container');
+    resizeContainers.forEach(container => {
+        const img = container.querySelector('img');
+        if (img) {
+            const newImg = img.cloneNode(true);
+            container.parentNode.replaceChild(newImg, container);
+        }
+    });
+
+    // Convert HTML to RTF with embedded images
+    const rtfContent = convertHtmlToRtf(title, tempDiv);
+    console.log('Exporting RTF content, length:', rtfContent.length);
+    
+    const blob = new Blob([rtfContent], {
+        type: 'application/rtf'
+    });
+    
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.rtf`;
+    document.body.appendChild(a);
+    a.click();
+    
+    setTimeout(() => {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    }, 100);
+}
+
+// Convert HTML content to RTF format with embedded images
+function convertHtmlToRtf(title, container) {
+    let rtfBody = '';
+    
+    // Process all child nodes
+    function processNode(node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+            // Escape special RTF characters and convert to RTF
+            let text = node.textContent;
+            text = text.replace(/\\/g, '\\\\');
+            text = text.replace(/\{/g, '\\{');
+            text = text.replace(/\}/g, '\\}');
+            // Handle unicode characters
+            let rtfText = '';
+            for (let i = 0; i < text.length; i++) {
+                const code = text.charCodeAt(i);
+                if (code > 127) {
+                    rtfText += '\\u' + code + '?';
+                } else {
+                    rtfText += text[i];
+                }
+            }
+            return rtfText;
+        }
+        
+        if (node.nodeType === Node.ELEMENT_NODE) {
+            const tag = node.tagName.toLowerCase();
+            let result = '';
+            
+            // Handle different HTML elements
+            switch (tag) {
+                case 'h1':
+                    result += '\\pard\\sb200\\sa100{\\b\\fs48 ';
+                    for (const child of node.childNodes) {
+                        result += processNode(child);
+                    }
+                    result += '}\\par\n';
+                    break;
+                case 'h2':
+                    result += '\\pard\\sb150\\sa80{\\b\\fs36 ';
+                    for (const child of node.childNodes) {
+                        result += processNode(child);
+                    }
+                    result += '}\\par\n';
+                    break;
+                case 'h3':
+                    result += '\\pard\\sb100\\sa60{\\b\\fs28 ';
+                    for (const child of node.childNodes) {
+                        result += processNode(child);
+                    }
+                    result += '}\\par\n';
+                    break;
+                case 'p':
+                case 'div':
+                    result += '\\pard\\sa100 ';
+                    for (const child of node.childNodes) {
+                        result += processNode(child);
+                    }
+                    result += '\\par\n';
+                    break;
+                case 'br':
+                    result += '\\line\n';
+                    break;
+                case 'b':
+                case 'strong':
+                    result += '{\\b ';
+                    for (const child of node.childNodes) {
+                        result += processNode(child);
+                    }
+                    result += '}';
+                    break;
+                case 'i':
+                case 'em':
+                    result += '{\\i ';
+                    for (const child of node.childNodes) {
+                        result += processNode(child);
+                    }
+                    result += '}';
+                    break;
+                case 'u':
+                    result += '{\\ul ';
+                    for (const child of node.childNodes) {
+                        result += processNode(child);
+                    }
+                    result += '}';
+                    break;
+                case 'strike':
+                case 's':
+                    result += '{\\strike ';
+                    for (const child of node.childNodes) {
+                        result += processNode(child);
+                    }
+                    result += '}';
+                    break;
+                case 'ul':
+                case 'ol':
+                    for (const child of node.childNodes) {
+                        result += processNode(child);
+                    }
+                    break;
+                case 'li':
+                    result += '\\pard\\li720\\sa60 \\bullet  ';
+                    for (const child of node.childNodes) {
+                        result += processNode(child);
+                    }
+                    result += '\\par\n';
+                    break;
+                case 'a':
+                    // Just include the text for links
+                    for (const child of node.childNodes) {
+                        result += processNode(child);
+                    }
+                    break;
+                case 'img':
+                    const src = node.getAttribute('src');
+                    if (src && src.startsWith('data:')) {
+                        result += convertImageToRtf(node);
+                    }
+                    break;
+                default:
+                    // For other elements, just process children
+                    for (const child of node.childNodes) {
+                        result += processNode(child);
+                    }
+            }
+            return result;
+        }
+        
+        return '';
+    }
+    
+    // Convert base64 image to RTF hex format
+    function convertImageToRtf(imgElement) {
+        const src = imgElement.getAttribute('src');
+        const matches = src.match(/^data:image\/(jpeg|jpg|png|gif);base64,(.+)$/i);
+        
+        if (!matches) return '';
+        
+        const imageType = matches[1].toLowerCase();
+        const base64Data = matches[2];
+        
+        // Convert base64 to hex
+        const binaryString = atob(base64Data);
+        let hexString = '';
+        for (let i = 0; i < binaryString.length; i++) {
+            const hex = binaryString.charCodeAt(i).toString(16).padStart(2, '0');
+            hexString += hex;
+        }
+        
+        // Get image dimensions
+        let width = imgElement.width || imgElement.naturalWidth || 400;
+        let height = imgElement.height || imgElement.naturalHeight || 300;
+        
+        // Limit max size
+        const maxWidth = 400;
+        if (width > maxWidth) {
+            const ratio = maxWidth / width;
+            width = maxWidth;
+            height = Math.round(height * ratio);
+        }
+        
+        // Convert pixels to twips (1 pixel ≈ 15 twips)
+        const widthTwips = width * 15;
+        const heightTwips = height * 15;
+        
+        // Determine picture type for RTF
+        let picType = 'jpegblip';
+        if (imageType === 'png') {
+            picType = 'pngblip';
+        }
+        
+        // Build RTF picture command
+        // Break hex string into lines for readability (RTF allows this)
+        let formattedHex = '';
+        for (let i = 0; i < hexString.length; i += 128) {
+            formattedHex += hexString.substr(i, 128) + '\n';
+        }
+        
+        return `\\pard\\sa100{\\pict\\${picType}\\picwgoal${widthTwips}\\pichgoal${heightTwips}\n${formattedHex}}\\par\n`;
+    }
+    
+    // Process all content
+    for (const child of container.childNodes) {
+        rtfBody += processNode(child);
+    }
+    
+    // Build complete RTF document
+    const rtf = `{\\rtf1\\ansi\\ansicpg1252\\deff0\\deflang1033
+{\\fonttbl{\\f0\\fswiss\\fcharset0 Calibri;}{\\f1\\fswiss\\fcharset0 Arial;}}
+{\\colortbl;\\red0\\green0\\blue0;}
+\\viewkind4\\uc1\\pard\\f0\\fs24
+\\pard\\sb200\\sa200{\\b\\fs56 ${title.replace(/[\\{}]/g, '\\$&')}}\\par
+${rtfBody}
+}`;
+    
+    return rtf;
 }
 
 function convertToPlainText(html) {
@@ -747,143 +1165,6 @@ function convertToMarkdown(html) {
     return markdown;
 }
 
-function convertToRtf(html, title) {
-    let rtf = '{\\rtf1\\ansi\\ansicpg1252\\cocoartf2580\\cocoasubrtf220\n' +
-              '{\\fonttbl\\f0\\fswiss\\fcharset0 Helvetica;}\n' +
-              '{\\colortbl;\\red0\\green0\\blue0;}\n' +
-              '\\vieww12000\\viewh15840\\viewkind0\n' +
-              '\\pard\\tx720\\tx1440\\tx2160\\tx2880\\tx3600\\tx4320\\tx5040\\tx5760\\tx6480\\tx7200\\tx7920\\tx8640\\pardirnatural\\partightenfactor0\n\n' +
-              '\\f0\\fs24 \\cf0 ';
-
-    rtf += `{\\b\\fs32 ${escapeRtf(title)}}\\par\\par\n`;
-
-    const tempElement = document.createElement('div');
-    tempElement.innerHTML = html;
-
-    function processNodeToRtf(node, inList = false, listLevel = 0) {
-        let nodeRtf = '';
-        
-        if (node.nodeType === Node.TEXT_NODE) {
-            return escapeRtf(node.textContent);
-        }
-        
-        if (node.nodeType === Node.ELEMENT_NODE) {
-            let prefix = '';
-            let suffix = '';
-            let childContent = '';
-
-            switch (node.nodeName.toLowerCase()) {
-                case 'b':
-                case 'strong':
-                    prefix = '{\\b ';
-                    suffix = '}';
-                    break;
-                case 'i':
-                case 'em':
-                    prefix = '{\\i ';
-                    suffix = '}';
-                    break;
-                case 'u':
-                    prefix = '{\\ul ';
-                    suffix = '}';
-                    break;
-                case 'h1':
-                    prefix = '{\\b\\fs40 ';
-                    suffix = '}\\par\\par\n';
-                    break;
-                case 'h2':
-                    prefix = '{\\b\\fs36 ';
-                    suffix = '}\\par\\par\n';
-                    break;
-                case 'h3':
-                    prefix = '{\\b\\fs32 ';
-                    suffix = '}\\par\\par\n';
-                    break;
-                case 'h4':
-                case 'h5':
-                case 'h6':
-                    prefix = '{\\b\\fs28 ';
-                    suffix = '}\\par\\par\n';
-                    break;
-                case 'p':
-                    suffix = '\\par\\par\n';
-                    break;
-                case 'br':
-                    nodeRtf = '\\line ';
-                    break;
-                case 'ul':
-                    for (let i = 0; i < node.children.length; i++) {
-                        if (node.children[i].nodeName.toLowerCase() === 'li') {
-                            const bullet = '\\bullet ';
-                            const indent = '\\li' + ((listLevel + 1) * 360) + ' \\fi-360 ';
-                            const listItemContent = processNodeToRtf(node.children[i], true, listLevel + 1);
-                            childContent += indent + bullet + listItemContent + '\\par\n';
-                        }
-                    }
-                    return childContent;
-                case 'ol':
-                    for (let i = 0; i < node.children.length; i++) {
-                        if (node.children[i].nodeName.toLowerCase() === 'li') {
-                            const number = (i + 1) + '. ';
-                            const indent = '\\li' + ((listLevel + 1) * 360) + ' \\fi-360 ';
-                            const listItemContent = processNodeToRtf(node.children[i], true, listLevel + 1);
-                            childContent += indent + number + listItemContent + '\\par\n';
-                        }
-                    }
-                    return childContent;
-                case 'li':
-                    if (!inList) {
-                        prefix = '\\bullet ';
-                        suffix = '\\par\n';
-                    }
-                    break;
-                case 'div':
-                    if (node.children.length > 0 || node.textContent.trim()) {
-                        suffix = '\\par\n';
-                    }
-                    break;
-            }
-
-            for (const child of node.childNodes) {
-                if ((node.nodeName.toLowerCase() === 'ul' || node.nodeName.toLowerCase() === 'ol') && 
-                    child.nodeName.toLowerCase() === 'li') {
-                    continue;
-                }
-                childContent += processNodeToRtf(child, inList, listLevel);
-            }
-            
-            nodeRtf += prefix + childContent + suffix;
-        }
-        
-        return nodeRtf;
-    }
-
-    rtf += processNodeToRtf(tempElement);
-    rtf += '}';
-    
-    return rtf;
-}
-
-function escapeRtf(text) {
-    if (!text) return '';
-    
-    return text
-        .replace(/\\/g, '\\\\')
-        .replace(/\{/g, '\\{')
-        .replace(/\}/g, '\\}')
-        .replace(/\n/g, '\\par\n')
-        .replace(/\r/g, '')
-        .replace(/\u2018|\u2019|\u201A|\uFFFD/g, '\'')
-        .replace(/\u201c|\u201d|\u201e/g, '"')
-        .replace(/\u2013/g, '-')
-        .replace(/\u2014/g, '--')
-        .replace(/\u2026/g, '...')
-        .replace(/[^\x00-\x7F]/g, c => {
-            const charCode = c.charCodeAt(0);
-            return '\\u' + charCode + '?';
-        });
-}
-
 function convertMarkdownToHtml(markdown) {
     let html = markdown;
 
@@ -1018,6 +1299,274 @@ function convertMarkdownToHtml(markdown) {
     return html;
 }
 
+function filterNotes() {
+    const searchTerm = elements.noteSearch.value.toLowerCase().trim();
+    const options = elements.noteSelector.querySelectorAll('option');
+    
+    options.forEach(option => {
+        if (option.value === '') {
+            return;
+        }
+        
+        const note = noteApp.notes[option.value];
+        if (!note) return;
+        
+        const titleMatch = note.title.toLowerCase().includes(searchTerm);
+        const contentMatch = note.content.toLowerCase().includes(searchTerm);
+        
+        if (searchTerm === '' || titleMatch || contentMatch) {
+            option.style.display = '';
+        } else {
+            option.style.display = 'none';
+        }
+    });
+}
+
+function changeFontSize(delta) {
+    noteApp.currentFontSize = Math.max(8, Math.min(24, noteApp.currentFontSize + delta));
+    elements.noteArea.style.fontSize = `${noteApp.currentFontSize}pt`;
+    elements.fontSizeIndicator.textContent = `${noteApp.currentFontSize}pt`;
+    localStorage.setItem('rosieWriteFontSize', noteApp.currentFontSize);
+}
+
+function loadFontSizePreference() {
+    const savedFontSize = localStorage.getItem('rosieWriteFontSize');
+    if (savedFontSize) {
+        noteApp.currentFontSize = parseInt(savedFontSize);
+        // Handle migration from old percentage-based values
+        if (noteApp.currentFontSize > 24) {
+            noteApp.currentFontSize = 12; // Reset to default if old % value
+        }
+        elements.noteArea.style.fontSize = `${noteApp.currentFontSize}pt`;
+        elements.fontSizeIndicator.textContent = `${noteApp.currentFontSize}pt`;
+    }
+}
+
+function saveSelection() {
+    const selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+        noteApp.savedSelection = selection.getRangeAt(0).cloneRange();
+    }
+}
+
+function restoreSelection() {
+    if (noteApp.savedSelection) {
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(noteApp.savedSelection);
+    }
+}
+
+function showLinkDialog() {
+    saveSelection();
+
+    const selection = window.getSelection();
+    if (selection.toString().trim()) {
+        elements.linkText.value = selection.toString();
+    } else {
+        elements.linkText.value = '';
+    }
+    elements.linkUrl.value = '';
+    
+    elements.linkDialog.classList.add('active');
+    elements.linkUrl.focus();
+}
+
+function hideLinkDialog() {
+    elements.linkDialog.classList.remove('active');
+    elements.linkText.value = '';
+    elements.linkUrl.value = '';
+}
+
+function insertLink() {
+    const text = elements.linkText.value.trim();
+    let url = elements.linkUrl.value.trim();
+    
+    if (!url) {
+        alert('Please enter a URL');
+        return;
+    }
+
+    if (!url.match(/^https?:\/\//i)) {
+        url = 'https://' + url;
+    }
+    
+    hideLinkDialog();
+    elements.noteArea.focus();
+    restoreSelection();
+    
+    const linkText = text || url;
+    const linkHtml = `<a href="${url}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
+    
+    document.execCommand('insertHTML', false, linkHtml);
+    
+    noteApp.isSaved = false;
+    updateSaveStatus('Unsaved changes');
+    captureState();
+}
+
+function handleImageUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+        alert('Image is too large. Please select an image under 5MB.');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        insertImage(event.target.result, file.name);
+    };
+    reader.readAsDataURL(file);
+
+    e.target.value = '';
+}
+
+function handlePaste(e) {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    
+    for (const item of items) {
+        if (item.type.startsWith('image/')) {
+            e.preventDefault();
+            
+            const file = item.getAsFile();
+            if (!file) continue;
+
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Pasted image is too large. Please use an image under 5MB.');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                insertImage(event.target.result, 'pasted-image');
+            };
+            reader.readAsDataURL(file);
+            
+            break;
+        }
+    }
+}
+
+function insertImage(dataUrl, altText) {
+    elements.noteArea.focus();
+    
+    const imgId = 'img_' + Date.now();
+    const imgHtml = `<span class="img-resize-container" contenteditable="false" data-img-id="${imgId}">
+        <img src="${dataUrl}" alt="${altText}" style="max-width: 100%; width: 300px;">
+        <div class="img-size-toolbar">
+            <button class="img-size-btn" data-size="25">25%</button>
+            <button class="img-size-btn" data-size="50">50%</button>
+            <button class="img-size-btn" data-size="75">75%</button>
+            <button class="img-size-btn" data-size="100">100%</button>
+        </div>
+        <div class="resize-handle resize-handle-se" data-handle="se"></div>
+        <div class="resize-handle resize-handle-sw" data-handle="sw"></div>
+        <div class="resize-handle resize-handle-ne" data-handle="ne"></div>
+        <div class="resize-handle resize-handle-nw" data-handle="nw"></div>
+    </span>&nbsp;`;
+    document.execCommand('insertHTML', false, imgHtml);
+    setTimeout(() => setupImageResizeHandlers(), 50);
+    
+    noteApp.isSaved = false;
+    updateSaveStatus('Unsaved changes');
+    captureState();
+}
+
+function setupImageResizeHandlers() {
+    const containers = elements.noteArea.querySelectorAll('.img-resize-container');
+    
+    containers.forEach(container => {
+        if (container.dataset.initialized) return;
+        container.dataset.initialized = 'true';
+        
+        const img = container.querySelector('img');
+        const handles = container.querySelectorAll('.resize-handle');
+        const sizeButtons = container.querySelectorAll('.img-size-btn');
+
+        sizeButtons.forEach(btn => {
+            btn.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const size = parseInt(btn.dataset.size);
+                const containerWidth = elements.noteArea.clientWidth - 50;
+                const newWidth = (containerWidth * size) / 100;
+                img.style.width = newWidth + 'px';
+                img.style.height = 'auto';
+                
+                noteApp.isSaved = false;
+                updateSaveStatus('Unsaved changes');
+                captureState();
+            });
+        });
+
+        handles.forEach(handle => {
+            handle.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                container.classList.add('resizing');
+                
+                const startX = e.clientX;
+                const startY = e.clientY;
+                const startWidth = img.offsetWidth;
+                const startHeight = img.offsetHeight;
+                const aspectRatio = startWidth / startHeight;
+                const handleType = handle.dataset.handle;
+                
+                function onMouseMove(e) {
+                    let deltaX = e.clientX - startX;
+                    let deltaY = e.clientY - startY;
+
+                    if (handleType === 'sw' || handleType === 'nw') {
+                        deltaX = -deltaX;
+                    }
+                    if (handleType === 'ne' || handleType === 'nw') {
+                        deltaY = -deltaY;
+                    }
+
+                    const delta = Math.abs(deltaX) > Math.abs(deltaY) ? deltaX : deltaY * aspectRatio;
+                    
+                    let newWidth = Math.max(50, startWidth + delta);
+                    const maxWidth = elements.noteArea.clientWidth - 50;
+                    newWidth = Math.min(newWidth, maxWidth);
+                    
+                    img.style.width = newWidth + 'px';
+                    img.style.height = 'auto';
+                }
+                
+                function onMouseUp() {
+                    container.classList.remove('resizing');
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                    
+                    noteApp.isSaved = false;
+                    updateSaveStatus('Unsaved changes');
+                    captureState();
+                }
+                
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            });
+        });
+    });
+}
+
+function reinitializeImageHandlers() {
+    const containers = elements.noteArea.querySelectorAll('.img-resize-container');
+    containers.forEach(container => {
+        delete container.dataset.initialized;
+    });
+    setupImageResizeHandlers();
+}
+
 window.onload = initApp;
 
 function updateSaveStatus(message) {
@@ -1077,6 +1626,7 @@ function importNote(e) {
         saveCurrentNote();
         updateNotesList();
         updateWordCount();
+        reinitializeImageHandlers();
     };
     
     reader.readAsText(file);

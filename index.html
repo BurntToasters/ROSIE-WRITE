@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="v1.css">
     <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
     <div class="app-container">
@@ -17,26 +18,65 @@
                 <input type="text" id="noteTitle" placeholder="Note Title" class="glass-input">
                 <div class="note-actions">
                     <button id="newNote" class="glass-btn" title="New Note"><i class="fas fa-plus"></i> New</button>
-                    <select id="noteSelector" class="glass-select" title="Select Note">
-                        <option value="">Select a note...</option>
-                    </select>
+                    <div class="note-search-container">
+                        <input type="text" id="noteSearch" placeholder="Search notes..." class="glass-input search-input" title="Search Notes">
+                        <select id="noteSelector" class="glass-select" title="Select Note">
+                            <option value="">Select a note...</option>
+                        </select>
+                    </div>
                     <button id="deleteNote" class="glass-btn danger" title="Delete Note"><i class="fas fa-trash"></i></button>
                     <button id="deleteAllNotes" class="glass-btn danger" title="Delete All Notes"><i class="fas fa-trash-alt"></i> Delete All</button>
                 </div>
             </div>
             <div class="toolbar glass-panel">
-                <div class="format-group">
-                    <button id="boldBtn" class="glass-btn" title="Bold (Ctrl+B)"><i class="fas fa-bold"></i></button>
-                    <button id="italicBtn" class="glass-btn" title="Italic (Ctrl+I)"><i class="fas fa-italic"></i></button>
-                    <button id="underlineBtn" class="glass-btn" title="Underline (Ctrl+U)"><i class="fas fa-underline"></i></button>
-                    <div class="divider"></div>
-                    <button id="headingBtn" class="glass-btn" title="Heading"><i class="fas fa-heading"></i></button>
-                    <button id="listBtn" class="glass-btn" title="Bullet List"><i class="fas fa-list-ul"></i></button>
-                    <button id="numListBtn" class="glass-btn" title="Numbered List"><i class="fas fa-list-ol"></i></button>
-                </div>
-                <div class="format-group">
-                    <button id="undoBtn" class="glass-btn" title="Undo (Ctrl+Z)"><i class="fas fa-undo"></i></button>
-                    <button id="redoBtn" class="glass-btn" title="Redo (Ctrl+Y)"><i class="fas fa-redo"></i></button>
+                <div class="toolbar-row">
+                    <div class="tool-group">
+                        <span class="tool-group-label">Format</span>
+                        <div class="tool-group-buttons">
+                            <button id="boldBtn" class="glass-btn toolbar-btn" title="Bold (Ctrl+B)"><i class="fas fa-bold"></i></button>
+                            <button id="italicBtn" class="glass-btn toolbar-btn" title="Italic (Ctrl+I)"><i class="fas fa-italic"></i></button>
+                            <button id="underlineBtn" class="glass-btn toolbar-btn" title="Underline (Ctrl+U)"><i class="fas fa-underline"></i></button>
+                        </div>
+                    </div>
+                    <div class="tool-group">
+                        <span class="tool-group-label">Paragraph</span>
+                        <div class="tool-group-buttons">
+                            <button id="headingBtn" class="glass-btn toolbar-btn" title="Heading"><i class="fas fa-heading"></i></button>
+                            <button id="listBtn" class="glass-btn toolbar-btn" title="Bullet List"><i class="fas fa-list-ul"></i></button>
+                            <button id="numListBtn" class="glass-btn toolbar-btn" title="Numbered List"><i class="fas fa-list-ol"></i></button>
+                        </div>
+                    </div>
+                    <div class="tool-group">
+                        <span class="tool-group-label">Align</span>
+                        <div class="tool-group-buttons">
+                            <button id="alignLeftBtn" class="glass-btn toolbar-btn" title="Align Left"><i class="fas fa-align-left"></i></button>
+                            <button id="alignCenterBtn" class="glass-btn toolbar-btn" title="Align Center"><i class="fas fa-align-center"></i></button>
+                            <button id="alignRightBtn" class="glass-btn toolbar-btn" title="Align Right"><i class="fas fa-align-right"></i></button>
+                        </div>
+                    </div>
+                    <div class="tool-group">
+                        <span class="tool-group-label">Font Size</span>
+                        <div class="tool-group-buttons font-size-controls">
+                            <button id="fontDecreaseBtn" class="glass-btn toolbar-btn" title="Decrease Font Size"><i class="fas fa-minus"></i></button>
+                            <span id="fontSizeIndicator" class="font-size-indicator">12pt</span>
+                            <button id="fontIncreaseBtn" class="glass-btn toolbar-btn" title="Increase Font Size"><i class="fas fa-plus"></i></button>
+                        </div>
+                    </div>
+                    <div class="tool-group">
+                        <span class="tool-group-label">Insert</span>
+                        <div class="tool-group-buttons">
+                            <button id="linkBtn" class="glass-btn toolbar-btn" title="Insert Link (Ctrl+K)"><i class="fas fa-link"></i></button>
+                            <button id="imageBtn" class="glass-btn toolbar-btn" title="Insert Image"><i class="fas fa-image"></i></button>
+                            <input type="file" id="imageInput" accept="image/*" hidden>
+                        </div>
+                    </div>
+                    <div class="tool-group">
+                        <span class="tool-group-label">History</span>
+                        <div class="tool-group-buttons">
+                            <button id="undoBtn" class="glass-btn toolbar-btn" title="Undo (Ctrl+Z)"><i class="fas fa-undo"></i></button>
+                            <button id="redoBtn" class="glass-btn toolbar-btn" title="Redo (Ctrl+Y)"><i class="fas fa-redo"></i></button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </header>
@@ -53,7 +93,7 @@
                     <a href="/about" class="about-link"><i class="fa-solid fa-circle-info"></i> About</a>
                     <a href="https://help.rosie.run/contact" target="_blank" class="about-link"><i class="fa-solid fa-envelope"></i> Contact</a>
                 </div>
-                <a href="https://github.com/BurntToasters/ROSIE-WRITE/releases/latest" class="version-indicator">v1.1.1</a>
+                <a href="https://github.com/BurntToasters/ROSIE-WRITE/releases/latest" class="version-indicator">v1.2.0</a>
                 <div class="actions">
                     <a href="https://github.com/BurntToasters/ROSIE-WRITE" style="text-decoration: none;" class="glass-btn small" title="View on GitHub"><i class="fab fa-github"></i></a>
                     <button id="exportBtn" class="glass-btn small" title="Export Note"><i class="fas fa-download"></i></button>
@@ -66,6 +106,22 @@
     </div>
 
     <script src="scr.js"></script>
+
+    <div id="linkDialog" class="dialog-overlay">
+        <div class="dialog glass-panel">
+            <h3>Insert Link</h3>
+            <div class="link-form">
+                <label for="linkText">Link Text</label>
+                <input type="text" id="linkText" class="glass-input" placeholder="Display text">
+                <label for="linkUrl">URL</label>
+                <input type="url" id="linkUrl" class="glass-input" placeholder="https://example.com">
+            </div>
+            <div class="dialog-actions">
+                <button id="cancelLink" class="glass-btn">Cancel</button>
+                <button id="insertLink" class="glass-btn primary">Insert</button>
+            </div>
+        </div>
+    </div>
 
     <div id="exportFormatDialog" class="dialog-overlay">
         <div class="dialog glass-panel">
@@ -84,9 +140,13 @@
                     <i class="fas fa-file-alt"></i> Plain Text (.txt)
                     <span class="format-desc">Text only, no formatting</span>
                 </button>
-                <button data-format="rtf" class="glass-btn format-btn">
+                <button data-format="pdf" class="glass-btn format-btn">
+                    <i class="fas fa-file-pdf"></i> PDF (.pdf)
+                    <span class="format-desc">Portable document with images <br><span style="color: lightcoral;">(This file type can't be re-imported into ROSIE Write)</span></span>
+                </button>
+                <button data-format="docx" class="glass-btn format-btn">
                     <i class="fas fa-file-word"></i> Rich Text (.rtf)
-                    <span class="format-desc">Preserves basic formatting <br><span style="color: lightcoral;">(This file type can't be re-imported into ROSIE Write)</span></span>
+                    <span class="format-desc">Word compatible format with images <br><span style="color: lightcoral;">(This file type can't be re-imported into ROSIE Write)</span></span>
                 </button>
             </div>
             <div class="dialog-actions">
