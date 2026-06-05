@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROSIE-WRITE | Note Editor</title>
+    <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <div class="app" id="app">
+        <!-- Left document rail -->
+        <aside class="doc-rail">
+            <div class="rail-head">
+                <a href="/"><img src="/assets/ROSIE-WRITE-logo.webp" alt="ROSIE-WRITE" class="rail-logo"></a>
+                <span class="rail-brand">ROSIE-WRITE</span>
+            </div>
+            <div class="rail-actions">
+                <button id="newNote" class="icon-btn new-btn" title="New Note"><i class="fas fa-plus"></i> New</button>
+                <button id="deleteNote" class="icon-btn danger" title="Delete Note"><i class="fas fa-trash"></i></button>
+                <button id="deleteAllNotes" class="icon-btn danger" title="Delete All Notes"><i class="fas fa-trash-alt"></i></button>
+            </div>
+            <div class="rail-search">
+                <input type="text" id="noteSearch" class="text-input" placeholder="Search notes…">
+            </div>
+            <div class="rail-list" id="railList"></div>
+        </aside>
+
+        <!-- Main column -->
+        <div class="main">
+            <div class="app-bar">
+                <button id="railToggle" class="icon-btn rail-toggle" title="Notes"><i class="fas fa-bars"></i></button>
+                <input type="text" id="noteTitle" class="text-input note-title" placeholder="Untitled Note">
+                <div class="bar-spacer"></div>
+                <div class="bar-actions">
+                    <button id="exportBtn" class="icon-btn" title="Export"><i class="fas fa-download"></i></button>
+                    <label for="importFile" class="icon-btn" title="Import"><i class="fas fa-upload"></i></label>
+                    <input type="file" id="importFile" accept=".txt,.html,.md" hidden>
+                    <a href="/about" class="icon-btn" title="About"><i class="fa-solid fa-circle-info"></i></a>
+                    <a href="https://github.com/BurntToasters/ROSIE-WRITE" class="icon-btn" title="GitHub"><i class="fab fa-github"></i></a>
+                    <button id="toggleTheme" class="icon-btn" title="Toggle Theme"><i class="fas fa-moon"></i></button>
+                </div>
+            </div>
+
+            <div class="toolbar">
+                <button id="undoBtn" class="icon-btn" title="Undo (Ctrl+Z)"><i class="fas fa-undo"></i></button>
+                <button id="redoBtn" class="icon-btn" title="Redo (Ctrl+Y)"><i class="fas fa-redo"></i></button>
+                <span class="divider"></span>
+                <div class="font-size-controls">
+                    <button id="fontDecreaseBtn" class="icon-btn" title="Decrease Font Size"><i class="fas fa-minus"></i></button>
+                    <span id="fontSizeIndicator" class="font-size-indicator">12pt</span>
+                    <button id="fontIncreaseBtn" class="icon-btn" title="Increase Font Size"><i class="fas fa-plus"></i></button>
+                </div>
+                <span class="divider"></span>
+                <button id="boldBtn" class="icon-btn" title="Bold (Ctrl+B)"><i class="fas fa-bold"></i></button>
+                <button id="italicBtn" class="icon-btn" title="Italic (Ctrl+I)"><i class="fas fa-italic"></i></button>
+                <button id="underlineBtn" class="icon-btn" title="Underline (Ctrl+U)"><i class="fas fa-underline"></i></button>
+                <span class="divider"></span>
+                <button id="headingBtn" class="icon-btn" title="Heading"><i class="fas fa-heading"></i></button>
+                <button id="listBtn" class="icon-btn" title="Bullet List"><i class="fas fa-list-ul"></i></button>
+                <button id="numListBtn" class="icon-btn" title="Numbered List"><i class="fas fa-list-ol"></i></button>
+                <span class="divider"></span>
+                <button id="alignLeftBtn" class="icon-btn" title="Align Left"><i class="fas fa-align-left"></i></button>
+                <button id="alignCenterBtn" class="icon-btn" title="Align Center"><i class="fas fa-align-center"></i></button>
+                <button id="alignRightBtn" class="icon-btn" title="Align Right"><i class="fas fa-align-right"></i></button>
+                <span class="divider"></span>
+                <button id="linkBtn" class="icon-btn" title="Insert Link (Ctrl+K)"><i class="fas fa-link"></i></button>
+                <button id="imageBtn" class="icon-btn" title="Insert Image"><i class="fas fa-image"></i></button>
+                <input type="file" id="imageInput" accept="image/*" hidden>
+            </div>
+
+            <main class="canvas">
+                <div class="page">
+                    <div id="pageContent"></div>
+                </div>
+            </main>
+
+            <div class="status-bar">
+                <span id="saveStatus">All changes saved</span>
+                <span id="wordCount" class="word-count">0 words | 0 characters</span>
+                <a href="https://github.com/BurntToasters/ROSIE-WRITE/releases/latest" class="version-indicator">v2.0.0</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Link dialog -->
+    <div id="linkDialog" class="dialog-overlay">
+        <div class="dialog">
+            <h3>Insert Link</h3>
+            <div class="link-form">
+                <label for="linkText">Link Text</label>
+                <input type="text" id="linkText" class="text-input" placeholder="Display text">
+                <label for="linkUrl">URL</label>
+                <input type="url" id="linkUrl" class="text-input" placeholder="https://example.com">
+            </div>
+            <div class="dialog-actions">
+                <button id="cancelLink" class="btn">Cancel</button>
+                <button id="insertLink" class="btn primary">Insert</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export dialog -->
+    <div id="exportFormatDialog" class="dialog-overlay">
+        <div class="dialog">
+            <h3>Export Format</h3>
+            <p>Choose the format to export your note:</p>
+            <div class="format-options">
+                <button data-format="html" class="format-btn">
+                    <span><i class="fas fa-code"></i> HTML (.html)</span>
+                    <span class="format-desc">Preserves all formatting and structure</span>
+                </button>
+                <button data-format="md" class="format-btn">
+                    <span><i class="fab fa-markdown"></i> Markdown (.md)</span>
+                    <span class="format-desc">Universal format with formatting preserved</span>
+                </button>
+                <button data-format="txt" class="format-btn">
+                    <span><i class="fas fa-file-alt"></i> Plain Text (.txt)</span>
+                    <span class="format-desc">Text only, no formatting</span>
+                </button>
+                <button data-format="pdf" class="format-btn">
+                    <span><i class="fas fa-file-pdf"></i> PDF (.pdf)</span>
+                    <span class="format-desc">Portable document with images (can't be re-imported)</span>
+                </button>
+                <button data-format="rtf" class="format-btn">
+                    <span><i class="fas fa-file-word"></i> Rich Text (.rtf)</span>
+                    <span class="format-desc">Word-compatible format with images (can't be re-imported)</span>
+                </button>
+            </div>
+            <div class="dialog-actions">
+                <button id="cancelExport" class="btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>

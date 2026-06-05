@@ -1,0 +1,142 @@
+/* TipTap / ProseMirror content styling inside the page sheet. */
+
+.ProseMirror {
+  outline: none;
+  font-size: var(--editor-font-size);
+  line-height: 1.6;
+  color: var(--text-primary);
+  min-height: 400px;
+}
+
+.ProseMirror > * + * {
+  margin-top: 0.75em;
+}
+
+.ProseMirror h1 { font-size: 2em; font-weight: 500; margin: 0.8em 0 0.4em; }
+.ProseMirror h2 { font-size: 1.5em; font-weight: 500; margin: 0.7em 0 0.35em; }
+.ProseMirror h3 { font-size: 1.25em; font-weight: 500; margin: 0.6em 0 0.3em; }
+
+.ProseMirror ul,
+.ProseMirror ol {
+  padding-left: 1.6em;
+}
+
+.ProseMirror blockquote {
+  border-left: 3px solid var(--border-strong);
+  padding-left: 1em;
+  color: var(--text-secondary);
+}
+
+.ProseMirror a {
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.ProseMirror code {
+  background: var(--surface-alt);
+  border-radius: 4px;
+  padding: 0.1em 0.3em;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+.ProseMirror pre {
+  background: var(--surface-alt);
+  border-radius: 6px;
+  padding: 12px 14px;
+  overflow-x: auto;
+}
+
+.ProseMirror img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Placeholder (TipTap Placeholder extension). */
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--text-secondary);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* ---------- Resizable image node ---------- */
+.img-resize-container {
+  display: inline-block;
+  position: relative;
+  margin: 8px 0;
+  line-height: 0;
+}
+
+.img-resize-container img {
+  display: block;
+  border-radius: 4px;
+}
+
+.img-resize-container:hover img,
+.img-resize-container.resizing img {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.resize-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: var(--accent);
+  border: 2px solid #fff;
+  border-radius: 2px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 10;
+}
+
+.img-resize-container:hover .resize-handle,
+.img-resize-container.resizing .resize-handle {
+  opacity: 1;
+}
+
+.resize-handle-se { bottom: -6px; right: -6px; cursor: se-resize; }
+.resize-handle-sw { bottom: -6px; left: -6px; cursor: sw-resize; }
+.resize-handle-ne { top: -6px; right: -6px; cursor: ne-resize; }
+.resize-handle-nw { top: -6px; left: -6px; cursor: nw-resize; }
+
+.img-size-toolbar {
+  position: absolute;
+  top: -38px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  padding: 5px 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: var(--shadow-pop);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease;
+  z-index: 20;
+}
+
+.img-resize-container:hover .img-size-toolbar,
+.img-resize-container.resizing .img-size-toolbar {
+  opacity: 1;
+  visibility: visible;
+}
+
+.img-size-btn {
+  padding: 3px 7px;
+  font-size: 0.72rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.img-size-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
