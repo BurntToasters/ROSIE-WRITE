@@ -1,0 +1,112 @@
+/* Palette + reset. Google-Docs-inspired: neutral app bg, white page sheet.
+   Dark mode via .dark-mode on <body> + CSS custom properties. */
+:root {
+  --app-bg: #f9fbfd;
+  --surface: #ffffff;
+  --surface-alt: #f1f3f4;
+  --sheet: #ffffff;
+  --text-primary: #202124;
+  --text-secondary: #5f6368;
+  --border: #dadce0;
+  --border-strong: #c4c7c5;
+  --accent: #1a73e8;
+  --accent-hover: #1666c1;
+  --accent-soft: rgba(26, 115, 232, 0.12);
+  --danger: #d93025;
+  --shadow-sheet: 0 1px 3px rgba(60, 64, 67, 0.15), 0 4px 8px rgba(60, 64, 67, 0.1);
+  --shadow-pop: 0 2px 6px rgba(60, 64, 67, 0.28);
+  --bar-height: 56px;
+  --editor-font-size: 12pt;
+}
+
+.dark-mode {
+  --app-bg: #1f1f1f;
+  --surface: #2a2a2a;
+  --surface-alt: #353535;
+  --sheet: #2d2d2d;
+  --text-primary: #e8eaed;
+  --text-secondary: #9aa0a6;
+  --border: #3c4043;
+  --border-strong: #5f6368;
+  --accent: #8ab4f8;
+  --accent-hover: #aecbfa;
+  --accent-soft: rgba(138, 180, 248, 0.16);
+  --danger: #f28b82;
+  --shadow-sheet: 0 1px 3px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-pop: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Roboto, Tahoma, Geneva, Verdana, sans-serif;
+  background: var(--app-bg);
+  color: var(--text-primary);
+  min-height: 100vh;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+a {
+  color: var(--accent);
+}
+
+/* Generic icon button used in bars. */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.icon-btn:hover:not(:disabled) {
+  background: var(--surface-alt);
+  color: var(--text-primary);
+}
+
+.icon-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.icon-btn.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.icon-btn.danger {
+  color: var(--danger);
+}
+
+.text-input {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.text-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
