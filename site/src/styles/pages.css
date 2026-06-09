@@ -114,6 +114,16 @@
   font-size: 0.85rem;
 }
 
+.page-foot .version-indicator {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.page-foot .version-indicator:hover {
+  color: var(--accent);
+}
+
 .page-foot .icon-btn {
   border: 1px solid var(--border);
 }
