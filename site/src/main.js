@@ -17,8 +17,8 @@ import { initToolbar, refreshToolbar } from './ui/toolbar.js';
 import { initSidebar } from './ui/sidebar.js';
 import { initDialogs, openLinkDialog } from './ui/dialogs.js';
 import { fileToHtml } from './io/import.js';
+import { bindVersionIndicator } from './version.js';
 
-const APP_VERSION = '2.0.0';
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 const $ = (id) => document.getElementById(id);
@@ -218,9 +218,7 @@ function init() {
     loadNote(store.create());
   }
 
-  // Version indicator in footer.
-  const verEl = document.querySelector('.version-indicator');
-  if (verEl) verEl.textContent = `v${APP_VERSION}`;
+  bindVersionIndicator();
 
   window.addEventListener('beforeunload', saveCurrent);
 }

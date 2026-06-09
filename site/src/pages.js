@@ -4,7 +4,9 @@ import '@fortawesome/fontawesome-free/css/solid.min.css';
 import './styles/base.css';
 import './styles/pages.css';
 import { initTheme } from './ui/theme.js';
+import { bindVersionIndicator } from './version.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   initTheme(document.getElementById('toggleTheme'));
+  bindVersionIndicator();
 });
