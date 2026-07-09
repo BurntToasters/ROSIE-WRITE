@@ -10,8 +10,14 @@ export function initStatusbar({ saveStatus, wordCount }) {
 
 export function setSaveStatus(message) {
   if (!saveStatusEl) return;
-  saveStatusEl.textContent = message;
-  saveStatusEl.classList.toggle('saving', message === 'Unsaved changes');
+  const textEl = saveStatusEl.querySelector('.status-text');
+  if (textEl) {
+    textEl.textContent = message;
+  } else {
+    saveStatusEl.textContent = message;
+  }
+  const isSaving = message === 'Unsaved changes' || message.includes('Saving');
+  saveStatusEl.classList.toggle('saving', isSaving);
 }
 
 // Briefly show a transient message, then revert to "All changes saved".

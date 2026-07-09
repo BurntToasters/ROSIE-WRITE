@@ -25,8 +25,12 @@ export function initTheme(toggleBtn) {
 
   toggleBtn?.addEventListener('click', () => {
     const next = !document.body.classList.contains('dark-mode');
+    toggleBtn.classList.add('theme-spin');
     document.body.classList.toggle('dark-mode', next);
     applyButtonIcon(toggleBtn, next);
     localStorage.setItem(KEY, String(next));
+    setTimeout(() => {
+      toggleBtn.classList.remove('theme-spin');
+    }, 450);
   });
 }

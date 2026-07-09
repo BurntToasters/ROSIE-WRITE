@@ -2,6 +2,7 @@
 import { convertToPlainText } from './html-to-plain.js';
 import { convertToMarkdown } from './html-to-md.js';
 import { convertHtmlToRtf } from './html-to-rtf.js';
+import { showToast } from '../ui/dialogs.js';
 
 function downloadBlob(content, mimeType, filename) {
   const blob = new Blob([content], { type: mimeType });
@@ -58,8 +59,9 @@ function createFullHtmlDocument(title, content) {
 function exportToPdf(title, content) {
   const printWindow = window.open('', '_blank', 'width=800,height=600');
   if (!printWindow) {
-    alert(
-      'Please allow pop-ups to export PDF. You can also use your browser\'s Print function (Ctrl+P) and select "Save as PDF".'
+    showToast(
+      'Please allow pop-ups to export PDF. You can also use your browser\'s Print function (Ctrl+P) and select "Save as PDF".',
+      'warning'
     );
     return;
   }
