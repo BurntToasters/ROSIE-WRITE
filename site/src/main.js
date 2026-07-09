@@ -15,7 +15,7 @@ import { initStatusbar, setSaveStatus, updateWordCount } from './ui/statusbar.js
 import { initFontSize } from './ui/fontsize.js';
 import { initToolbar, refreshToolbar } from './ui/toolbar.js';
 import { initSidebar } from './ui/sidebar.js';
-import { initDialogs, openLinkDialog } from './ui/dialogs.js';
+import { initDialogs, openLinkDialog, showToast } from './ui/dialogs.js';
 import { fileToHtml } from './io/import.js';
 import { bindVersionIndicator } from './version.js';
 
@@ -50,6 +50,11 @@ function init() {
     insertLinkBtn: $('insertLink'), cancelLinkBtn: $('cancelLink'),
     exportDialog: $('exportFormatDialog'), cancelExportBtn: $('cancelExport'),
     formatBtns: document.querySelectorAll('.format-btn'),
+    confirmDialog: $('confirmDialog'),
+    confirmTitle: $('confirmTitle'),
+    confirmMessage: $('confirmMessage'),
+    cancelConfirmBtn: $('cancelConfirm'),
+    okConfirmBtn: $('okConfirm'),
   };
 
   // Mobile sidebar toggle.
@@ -105,11 +110,11 @@ function init() {
   // ---- Image insert (file picker + paste), base64, 5MB cap ----
   function insertImageFile(file) {
     if (!file || !file.type.startsWith('image/')) {
-      alert('Please select an image file');
+      showToast('Please select an image file', 'warning');
       return;
     }
     if (file.size > MAX_IMAGE_BYTES) {
-      alert('Image is too large. Please select an image under 5MB.');
+      showToast('Image is too large. Please select an image under 5MB.', 'error');
       return;
     }
     const reader = new FileReader();

@@ -69,6 +69,7 @@ export function create() {
     id,
     title: 'Untitled Note',
     content: '',
+    pinned: false,
     lastModified: new Date().toISOString(),
   };
   state.currentId = id;
@@ -79,10 +80,23 @@ export function create() {
 
 export function save(id, { title, content }) {
   if (!id || !state.notes[id]) return;
+  const existing = state.notes[id];
   state.notes[id] = {
-    id,
+    ...existing,
     title: title || 'Untitled Note',
     content,
+    lastModified: new Date().toISOString(),
+  };
+  persist();
+  notify();
+}
+
+export function togglePin(id) {
+  if (!id || !state.notes[id]) return;
+  const existing = state.notes[id];
+  state.notes[id] = {
+    ...existing,
+    pinned: !existing.pinned,
     lastModified: new Date().toISOString(),
   };
   persist();

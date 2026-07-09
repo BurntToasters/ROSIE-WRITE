@@ -25,7 +25,7 @@ function insertLink() {
   const text = els.linkText.value.trim();
   let url = els.linkUrl.value.trim();
   if (!url) {
-    alert('Please enter a URL');
+    showToast('Please enter a URL', 'warning');
     return;
   }
   if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
@@ -67,6 +67,22 @@ function hideExport() {
   els.exportDialog.classList.remove('active');
 }
 
+let confirmOnConfirm = null;
+
+function showConfirm(title, message, onConfirm) {
+  if (!els.confirmDialog) return;
+  els.confirmTitle.textContent = title;
+  els.confirmMessage.textContent = message;
+  confirmOnConfirm = onConfirm;
+  els.confirmDialog.classList.add('active');
+}
+
+function hideConfirm() {
+  if (!els.confirmDialog) return;
+  els.confirmDialog.classList.remove('active');
+  confirmOnConfirm = null;
+}
+
 export function initDialogs(config) {
   editor = config.editor;
   els = config.els;
@@ -85,8 +101,14 @@ export function initDialogs(config) {
     });
   });
 
+  els.cancelConfirmBtn?.addEventListener('click', hideConfirm);
+  els.okConfirmBtn?.addEventListener('click', () => {
+    confirmOnConfirm?.();
+    hideConfirm();
+  });
+
   // Close dialogs on overlay click.
-  [els.linkDialog, els.exportDialog].forEach((overlay) => {
+  [els.linkDialog, els.exportDialog, els.confirmDialog].forEach((overlay) => {
     overlay?.addEventListener('click', (e) => {
       if (e.target === overlay) overlay.classList.remove('active');
     });
@@ -95,4 +117,36 @@ export function initDialogs(config) {
 
 export function openLinkDialog() {
   showLink();
+}
+
+export { showConfirm };
+
+export function showToast(message, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+
+  let iconClass = 'fa-info-circle';
+  if (type === 'error') iconClass = 'fa-exclamation-circle';
+  else if (type === 'success') iconClass = 'fa-check-circle';
+  else if (type === 'warning') iconClass = 'fa-exclamation-triangle';
+
+  toast.innerHTML = `<i class="fas ${iconClass}"></i> <span class="toast-text">${message}</span>`;
+  container.appendChild(toast);
+
+  // Trigger reflow/animation
+  setTimeout(() => {
+    toast.classList.add('visible');
+  }, 10);
+
+  // Remove after 3s
+  setTimeout(() => {
+    toast.classList.remove('visible');
+    toast.classList.add('fade-out');
+    toast.addEventListener('transitionend', () => {
+      toast.remove();
+    });
+  }, 3000);
 }

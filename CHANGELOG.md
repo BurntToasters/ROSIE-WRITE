@@ -42,6 +42,16 @@ browser cache on every change.
 Dark mode (`rosieWriteDarkMode`) and editor font size (`rosieWriteFontSize`) still read
 the same keys, so those preferences should carry over.
 
+## Changes in `v2.0.0-beta.2:`
+
+- **Ver:** Bumped version to `v2.0.0-beta.2`.
+- **NEW - Pinned Notes**: Group notes into a "Pinned" section at the top of the sidebar by clicking the pin button on note items, followed by a "Recent" section.
+- **NEW - Custom Dialog Overlays**: Replaced native browser `alert()` and `confirm()` popups with custom styled overlay dialogs for note deletion and "Delete All" actions (featuring danger buttons).
+- **NEW - Toast Notifications**: Introduced custom slide-in toast notifications for warnings, success updates, and alert messages.
+- **NEW - LED Saving Indicator**: Enhanced the status bar save message with a glowing status dot indicator (steady green for saved, pulsing amber for saving or unsaved changes).
+- **UI/UX**: Custom slim styled scrollbars configured globally across light and dark modes.
+- **UI/UX**: Added a smooth rotation animation to the theme toggle button icon and hover/click scale feedback for action items.
+
 ## Changes in `v2.0.0-beta.1:`
 
 - **Ver:** Bumped version to `v2.0.0-beta.1`.

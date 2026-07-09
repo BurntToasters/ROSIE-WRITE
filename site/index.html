@@ -75,7 +75,7 @@
             </main>
 
             <div class="status-bar">
-                <span id="saveStatus">All changes saved</span>
+                <span id="saveStatus" class="save-status"><span class="status-dot"></span><span class="status-text">All changes saved</span></span>
                 <span id="wordCount" class="word-count">0 words | 0 characters</span>
                 <a href="#" class="version-indicator"></a>
             </div>
@@ -131,6 +131,21 @@
             </div>
         </div>
     </div>
+
+    <!-- Confirmation dialog -->
+    <div id="confirmDialog" class="dialog-overlay">
+        <div class="dialog">
+            <h3 id="confirmTitle">Confirm Action</h3>
+            <p id="confirmMessage">Are you sure you want to proceed?</p>
+            <div class="dialog-actions">
+                <button id="cancelConfirm" class="btn">Cancel</button>
+                <button id="okConfirm" class="btn primary danger">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notification container -->
+    <div id="toastContainer" class="toast-container"></div>
 
     <script type="module" src="/src/main.js"></script>
 </body>
