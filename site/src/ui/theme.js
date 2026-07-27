@@ -1,5 +1,7 @@
 // Dark mode toggle. Shared by index/about/404. Adds/removes `.dark-mode` on body,
 // persists to localStorage `rosieWriteDarkMode`, honors system preference on first run.
+import { readPref, writePref } from '../prefs.js';
+
 const KEY = 'rosieWriteDarkMode';
 
 function applyButtonIcon(btn, isDark) {
@@ -10,7 +12,7 @@ function applyButtonIcon(btn, isDark) {
 }
 
 export function initTheme(toggleBtn) {
-  const saved = localStorage.getItem(KEY);
+  const saved = readPref(KEY);
   let isDark;
   if (saved !== null) {
     isDark = saved === 'true';
@@ -18,7 +20,7 @@ export function initTheme(toggleBtn) {
     isDark =
       window.matchMedia &&
       window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (isDark) localStorage.setItem(KEY, 'true');
+    if (isDark) writePref(KEY, 'true');
   }
   document.body.classList.toggle('dark-mode', isDark);
   applyButtonIcon(toggleBtn, isDark);
@@ -28,7 +30,7 @@ export function initTheme(toggleBtn) {
     toggleBtn.classList.add('theme-spin');
     document.body.classList.toggle('dark-mode', next);
     applyButtonIcon(toggleBtn, next);
-    localStorage.setItem(KEY, String(next));
+    writePref(KEY, String(next));
     setTimeout(() => {
       toggleBtn.classList.remove('theme-spin');
     }, 450);

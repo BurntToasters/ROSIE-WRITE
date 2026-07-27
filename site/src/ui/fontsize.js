@@ -1,6 +1,8 @@
 // Global font-size control. Matches v1 behavior: the +/- buttons set the base
 // font size of the whole editor surface (not per-selection), 8-24pt, persisted
 // to localStorage `rosieWriteFontSize`. Applied as a CSS variable on the editor.
+import { readPref, writePref } from '../prefs.js';
+
 const KEY = 'rosieWriteFontSize';
 const MIN = 8;
 const MAX = 24;
@@ -19,8 +21,8 @@ export function initFontSize({ editor, decreaseBtn, increaseBtn, indicator }) {
   editorEl = editor;
   indicatorEl = indicator;
 
-  const saved = parseInt(localStorage.getItem(KEY), 10);
-  if (!Number.isNaN(saved)) size = saved > MAX ? DEFAULT : saved;
+  const saved = parseInt(readPref(KEY), 10);
+  if (!Number.isNaN(saved)) size = Math.max(MIN, Math.min(MAX, saved));
   apply();
 
   decreaseBtn?.addEventListener('click', () => change(-1));
@@ -29,6 +31,6 @@ export function initFontSize({ editor, decreaseBtn, increaseBtn, indicator }) {
 
 function change(delta) {
   size = Math.max(MIN, Math.min(MAX, size + delta));
-  localStorage.setItem(KEY, String(size));
+  writePref(KEY, String(size));
   apply();
 }

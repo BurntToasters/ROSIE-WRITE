@@ -1,5 +1,27 @@
 // Convert HTML (inside a container element) to an RTF document string, embedding
-// base64 images as hex. Ported verbatim from v1 (scr.js convertHtmlToRtf).
+// base64 images as hex. Ported from v1 (scr.js convertHtmlToRtf).
+
+// RTF's \uN control word takes a *signed* 16-bit value, so code units above
+// 32767 have to wrap into the negative range or readers mis-decode them.
+// Emoji and other astral characters are surrogate pairs, and RTF expects both
+// halves emitted individually, which iterating by code unit gives us.
+function encodeUnicode(text) {
+  let out = '';
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    if (code > 127) {
+      out += '\\u' + (code > 32767 ? code - 65536 : code) + '?';
+    } else {
+      out += text[i];
+    }
+  }
+  return out;
+}
+
+function escapeRtfLiteral(text) {
+  return text.replace(/[\\{}]/g, '\\$&');
+}
+
 export function convertHtmlToRtf(title, container) {
   let rtfBody = '';
 
@@ -9,13 +31,7 @@ export function convertHtmlToRtf(title, container) {
       text = text.replace(/\\/g, '\\\\');
       text = text.replace(/\{/g, '\\{');
       text = text.replace(/\}/g, '\\}');
-      let rtfText = '';
-      for (let i = 0; i < text.length; i++) {
-        const code = text.charCodeAt(i);
-        if (code > 127) rtfText += '\\u' + code + '?';
-        else rtfText += text[i];
-      }
-      return rtfText;
+      return encodeUnicode(text);
     }
 
     if (node.nodeType === Node.ELEMENT_NODE) {
@@ -84,8 +100,14 @@ export function convertHtmlToRtf(title, container) {
 
   function convertImageToRtf(imgElement) {
     const src = imgElement.getAttribute('src');
-    const matches = src.match(/^data:image\/(jpeg|jpg|png|gif);base64,(.+)$/i);
-    if (!matches) return '';
+    // RTF only defines \pngblip and \jpegblip for our purposes. GIF/WebP have
+    // no equivalent, and labelling them \jpegblip (as v1 did) produces a file
+    // Word renders as a broken image — say so instead of shipping corruption.
+    const matches = src.match(/^data:image\/(jpeg|jpg|png);base64,(.+)$/i);
+    if (!matches) {
+      // Inline, so an image inside a paragraph doesn't split it.
+      return '{\\i ' + encodeUnicode('[Image omitted: format not supported by RTF]') + '}';
+    }
 
     const imageType = matches[1].toLowerCase();
     const base64Data = matches[2];
@@ -120,7 +142,7 @@ export function convertHtmlToRtf(title, container) {
 {\\fonttbl{\\f0\\fswiss\\fcharset0 Calibri;}{\\f1\\fswiss\\fcharset0 Arial;}}
 {\\colortbl;\\red0\\green0\\blue0;}
 \\viewkind4\\uc1\\pard\\f0\\fs24
-\\pard\\sb200\\sa200{\\b\\fs56 ${title.replace(/[\\{}]/g, '\\$&')}}\\par
+\\pard\\sb200\\sa200{\\b\\fs56 ${encodeUnicode(escapeRtfLiteral(title))}}\\par
 ${rtfBody}
 }`;
 }

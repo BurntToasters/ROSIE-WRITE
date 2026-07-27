@@ -2,6 +2,13 @@
 // via editor.isActive() (replaces the old execCommand / queryCommandState logic).
 
 let buttons = {};
+let locked = false;
+
+// While editing is disabled (storage unavailable / awaiting recovery) undo and
+// redo must stay off, even though refreshToolbar runs on every selection change.
+export function setToolbarLocked(value) {
+  locked = value;
+}
 
 export function initToolbar({ editor, els, onLink, onImage }) {
   buttons = {
@@ -60,7 +67,13 @@ export function initToolbar({ editor, els, onLink, onImage }) {
 
 // Reflect current selection's marks/nodes on the toolbar buttons.
 export function refreshToolbar(editor) {
-  const set = (btn, active) => btn?.classList.toggle('active', active);
+  // Active state has to be conveyed non-visually too, or screen reader users
+  // can't tell whether bold/italic/alignment is currently on.
+  const set = (btn, active) => {
+    if (!btn) return;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-pressed', String(active));
+  };
   set(buttons.bold, editor.isActive('bold'));
   set(buttons.italic, editor.isActive('italic'));
   set(buttons.underline, editor.isActive('underline'));
@@ -73,6 +86,6 @@ export function refreshToolbar(editor) {
   set(buttons.link, editor.isActive('link'));
 
   // Disable undo/redo when there is nothing to undo/redo.
-  if (buttons.undo) buttons.undo.disabled = !editor.can().undo();
-  if (buttons.redo) buttons.redo.disabled = !editor.can().redo();
+  if (buttons.undo) buttons.undo.disabled = locked || !editor.can().undo();
+  if (buttons.redo) buttons.redo.disabled = locked || !editor.can().redo();
 }

@@ -10,12 +10,13 @@ export function convertToMarkdown(html) {
     const tag = node.nodeName.toLowerCase();
     let childContent = '';
     for (const child of node.childNodes) {
+      const childTag = child.nodeName.toLowerCase();
       if (tag === 'ul' || tag === 'ol') {
-        if (child.nodeName.toLowerCase() === 'li') {
-          childContent += processNode(child, tag, listLevel);
-        } else {
-          childContent += processNode(child, listType, listLevel);
-        }
+        childContent += processNode(child, childTag === 'li' ? tag : listType, listLevel);
+      } else if (tag === 'li' && (childTag === 'ul' || childTag === 'ol')) {
+        // A list inside a list item is one level deeper. Without this the
+        // indent stayed at 0 and nested bullets flattened on export.
+        childContent += processNode(child, childTag, listLevel + 1);
       } else {
         childContent += processNode(child, listType, listLevel);
       }
@@ -46,7 +47,10 @@ export function convertToMarkdown(html) {
       case 'blockquote':
         return '> ' + childContent.trim().replace(/\n/g, '\n> ') + '\n\n';
       case 'code': return '`' + childContent + '`';
-      case 'pre': return '```\n' + childContent + '\n```\n\n';
+      // Use the raw text, not childContent: a <pre><code> pair would otherwise
+      // arrive already wrapped in inline backticks and end up fenced *and*
+      // backticked (```` ```\`code\`\n``` ````).
+      case 'pre': return '```\n' + node.textContent + '\n```\n\n';
       case 'a': {
         const href = node.getAttribute('href') || '';
         return '[' + childContent + '](' + href + ')';

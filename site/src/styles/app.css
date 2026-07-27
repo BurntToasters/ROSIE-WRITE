@@ -46,13 +46,13 @@
 .rail-actions .new-btn {
   flex: 1;
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-foreground);
   border: none;
 }
 
 .rail-actions .new-btn:hover {
   background: var(--accent-hover);
-  color: #fff;
+  color: var(--accent-foreground);
 }
 
 .rail-search {
@@ -128,7 +128,7 @@
   border: none;
   background: transparent;
   color: var(--text-secondary);
-  opacity: 0;
+  opacity: 0.45;
   font-size: 0.85rem;
   transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
   margin-right: 6px;
@@ -136,6 +136,7 @@
 }
 
 .rail-item:hover .rail-item-pin,
+.rail-item:focus-within .rail-item-pin,
 .rail-item-pin.pinned {
   opacity: 1;
 }
@@ -144,7 +145,8 @@
   color: var(--accent);
 }
 
-.rail-item-pin:hover {
+.rail-item-pin:hover,
+.rail-item-pin:focus-visible {
   background: var(--surface-alt);
   color: var(--accent);
 }
@@ -306,6 +308,17 @@
   background-color: #d97706;
   box-shadow: 0 0 6px rgba(217, 119, 6, 0.6);
   animation: pulse-led 1.2s infinite;
+}
+
+/* Storage failure: never leave the LED green when work isn't stored. */
+.save-status.error .status-dot {
+  background-color: var(--danger);
+  box-shadow: 0 0 6px rgba(217, 48, 37, 0.6);
+}
+
+.save-status.error {
+  color: var(--danger);
+  font-weight: 500;
 }
 
 @keyframes pulse-led {

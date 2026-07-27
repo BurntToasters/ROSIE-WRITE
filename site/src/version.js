@@ -1,6 +1,6 @@
 // App version comes from root package.json via Vite define (__APP_VERSION__).
 // Display + GitHub release tag both use the same string with a leading v
-// (e.g. package "2.0.0-b1" → v2.0.0-b1, package "2.0.0-beta.1" → v2.0.0-beta.1).
+// (e.g. package "2.0.0-beta.1" → v2.0.0-beta.1).
 
 export const APP_VERSION = __APP_VERSION__;
 

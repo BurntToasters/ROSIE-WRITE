@@ -2,20 +2,28 @@
 export function convertMarkdownToHtml(markdown) {
   let html = markdown;
 
+  const escapeHtml = (text) => text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // Code must be pulled out before any other rule runs. Converting it in place
+  // left the generated markup exposed to the emphasis and link replacements
+  // below, so literal `*`, `_`, or `[..](..)` inside a code block got mangled.
+  // Placeholders are restored last, once every other transform is done.
+  const blocks = [];
+  const inlines = [];
+
+  // A <pre> placeholder keeps the paragraph wrapper from wrapping it in <p>,
+  // and holds no newlines so the blank-line paragraph split can't break it.
   html = html.replace(/```([\s\S]*?)```/g, (match, code) => {
-    const escaped = code
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-    return '<pre><code>' + escaped + '</code></pre>';
+    blocks.push(escapeHtml(code));
+    return `<pre data-md-block="${blocks.length - 1}"></pre>`;
   });
 
   html = html.replace(/`([^`]+?)`/g, (match, code) => {
-    const escaped = code
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-    return '<code>' + escaped + '</code>';
+    inlines.push(escapeHtml(code));
+    return `\u0000md-inline-${inlines.length - 1}\u0000`;
   });
 
   html = html.replace(/^###### (.+)$/gm, '<h6>$1</h6>');
@@ -95,6 +103,15 @@ export function convertMarkdownToHtml(markdown) {
       return '<p>' + para.replace(/\n/g, '<br>') + '</p>';
     })
     .join('\n');
+
+  html = html.replace(
+    /<pre data-md-block="(\d+)"><\/pre>/g,
+    (match, index) => '<pre><code>' + blocks[Number(index)] + '</code></pre>'
+  );
+  html = html.replace(
+    /\u0000md-inline-(\d+)\u0000/g,
+    (match, index) => '<code>' + inlines[Number(index)] + '</code>'
+  );
 
   return html.replace(/\n{3,}/g, '\n\n');
 }

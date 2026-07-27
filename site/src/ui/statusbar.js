@@ -1,7 +1,19 @@
 // Save status text + word/character count.
 let saveStatusEl = null;
 let wordCountEl = null;
-let resetTimer = null;
+
+// Shared so callers can't drift from the strings that drive the LED styling.
+export const STATUS = {
+  saved: 'All changes saved',
+  unsaved: 'Unsaved changes',
+  failed: 'Save failed',
+  recovery: 'Notes need recovery',
+  unavailable: 'Storage unavailable',
+};
+
+// Statuses that mean "your work is not safely stored". These must not show the
+// steady green LED, which reads as "all good".
+const ERROR_STATUSES = new Set([STATUS.failed, STATUS.recovery, STATUS.unavailable]);
 
 export function initStatusbar({ saveStatus, wordCount }) {
   saveStatusEl = saveStatus;
@@ -16,15 +28,11 @@ export function setSaveStatus(message) {
   } else {
     saveStatusEl.textContent = message;
   }
-  const isSaving = message === 'Unsaved changes' || message.includes('Saving');
+  const isError = ERROR_STATUSES.has(message);
+  const isSaving =
+    !isError && (message === STATUS.unsaved || message.includes('Saving'));
   saveStatusEl.classList.toggle('saving', isSaving);
-}
-
-// Briefly show a transient message, then revert to "All changes saved".
-export function flashSaveStatus(message, ms = 1500) {
-  setSaveStatus(message);
-  clearTimeout(resetTimer);
-  resetTimer = setTimeout(() => setSaveStatus('All changes saved'), ms);
+  saveStatusEl.classList.toggle('error', isError);
 }
 
 export function updateWordCount(text) {

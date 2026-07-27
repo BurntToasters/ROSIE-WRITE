@@ -4,13 +4,13 @@ import * as store from '../notes/store.js';
 import { showConfirm, showToast } from './dialogs.js';
 
 let els = {};
-let onSwitch = null; // (note) => void  — load a note into the editor
-let saveCurrent = null; // () => void   — flush the open note before switching
+let onSwitch = null; // (note) => void — load a note into the editor
+let saveCurrent = null; // () => boolean — flush the open note before switching
 
 function fmtDate(iso) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleDateString(undefined, {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString(undefined, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -35,16 +35,22 @@ function createNoteItem(note, currentId) {
   date.textContent = fmtDate(note.lastModified);
 
   itemBtn.append(title, date);
+  itemBtn.setAttribute(
+    'aria-label',
+    `${title.textContent}${date.textContent ? `, modified ${date.textContent}` : ''}`
+  );
   itemBtn.addEventListener('click', () => selectNote(note.id));
 
   const pinBtn = document.createElement('button');
   pinBtn.type = 'button';
   pinBtn.className = 'rail-item-pin' + (note.pinned ? ' pinned' : '');
   pinBtn.title = note.pinned ? 'Unpin Note' : 'Pin Note';
-  pinBtn.innerHTML = '<i class="fas fa-thumbtack"></i>';
-  pinBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  pinBtn.setAttribute('aria-label', pinBtn.title);
+  pinBtn.setAttribute('aria-pressed', String(Boolean(note.pinned)));
+  pinBtn.innerHTML = '<i class="fas fa-thumbtack" aria-hidden="true"></i>';
+  pinBtn.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
     store.togglePin(note.id);
   });
 
@@ -66,13 +72,13 @@ function render() {
     return;
   }
 
-  const pinnedNotes = notes.filter((n) => n.pinned);
-  const recentNotes = notes.filter((n) => !n.pinned);
+  const pinnedNotes = notes.filter((note) => note.pinned);
+  const recentNotes = notes.filter((note) => !note.pinned);
 
   if (pinnedNotes.length > 0) {
     const header = document.createElement('div');
     header.className = 'rail-section-header';
-    header.innerHTML = '<i class="fas fa-thumbtack"></i> Pinned';
+    header.innerHTML = '<i class="fas fa-thumbtack" aria-hidden="true"></i> Pinned';
     els.list.appendChild(header);
 
     for (const note of pinnedNotes) {
@@ -82,7 +88,7 @@ function render() {
     if (recentNotes.length > 0) {
       const headerRecent = document.createElement('div');
       headerRecent.className = 'rail-section-header';
-      headerRecent.innerHTML = '<i class="fas fa-clock"></i> Recent';
+      headerRecent.innerHTML = '<i class="fas fa-clock" aria-hidden="true"></i> Recent';
       els.list.appendChild(headerRecent);
     }
   }
@@ -94,10 +100,9 @@ function render() {
 
 function selectNote(id) {
   if (id === store.currentId()) return;
-  saveCurrent?.();
-  store.setCurrent(id);
-  onSwitch?.(store.get(id));
-  render();
+  if (saveCurrent?.() === false) return;
+  const note = store.get(id);
+  if (note) onSwitch?.(note);
 }
 
 export function initSidebar(config) {
@@ -106,10 +111,9 @@ export function initSidebar(config) {
   saveCurrent = config.saveCurrent;
 
   els.newBtn?.addEventListener('click', () => {
-    saveCurrent?.();
+    if (saveCurrent?.() === false) return;
     const note = store.create();
-    onSwitch?.(note);
-    render();
+    if (note) onSwitch?.(note);
   });
 
   els.deleteBtn?.addEventListener('click', () => {
@@ -120,26 +124,22 @@ export function initSidebar(config) {
       return;
     }
     showConfirm('Delete Note', 'Are you sure you want to delete this note?', () => {
-      store.remove(id);
-      onSwitch?.(store.current());
-      render();
+      if (store.remove(id)) onSwitch?.(store.current());
     });
   });
 
   els.deleteAllBtn?.addEventListener('click', () => {
-    const n = store.count();
-    if (n === 0) {
+    const noteCount = store.count();
+    if (noteCount === 0) {
       showToast("You don't have any notes to delete.", 'warning');
       return;
     }
     showConfirm(
       'Delete All Notes',
-      `Are you sure you want to delete ALL ${n} notes? This action cannot be undone.`,
+      `Are you sure you want to delete ALL ${noteCount} notes? This action cannot be undone.`,
       () => {
-        store.removeAll();
-        const note = store.create();
-        onSwitch?.(note);
-        render();
+        const note = store.replaceAllWithNew();
+        if (note) onSwitch?.(note);
       }
     );
   });

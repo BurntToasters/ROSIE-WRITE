@@ -83,11 +83,12 @@
 .btn.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--accent-foreground);
 }
 
 .btn.primary:hover {
   background: var(--accent-hover);
+  color: var(--accent-foreground);
 }
 
 .format-options {
@@ -129,11 +130,19 @@
 .btn.primary.danger {
   background: var(--danger);
   border-color: var(--danger);
+  color: var(--danger-foreground);
 }
 
 .btn.primary.danger:hover {
   background: #c5271e;
   border-color: #c5271e;
+  color: #ffffff;
+}
+
+.dark-mode .btn.primary.danger:hover {
+  background: #ffb4ab;
+  border-color: #ffb4ab;
+  color: #202124;
 }
 
 /* ---------- Toast Notifications ---------- */

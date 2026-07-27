@@ -1,6 +1,6 @@
 {
   "name": "rosie-write",
-  "version": "2.0.0-b2",
+  "version": "2.0.0-beta.3",
   "description": "Simple web-based note creator/editor using localStorage",
   "type": "module",
   "license": "MPL-2.0",
@@ -17,6 +17,7 @@
   "dependencies": {
     "@fortawesome/fontawesome-free": "6.7.2",
     "@tiptap/core": "3.24.0",
+    "@tiptap/pm": "3.24.0",
     "@tiptap/extension-image": "3.24.0",
     "@tiptap/extension-placeholder": "3.24.0",
     "@tiptap/extension-text-align": "3.24.0",

@@ -1,9 +1,54 @@
-// Link insert/edit dialog + export-format chooser dialog.
+// Accessible link, export-format, and confirmation dialogs.
 import { exportNote } from '../io/export.js';
 
 let editor = null;
 let els = {};
 let getTitle = () => 'Untitled';
+let activeDialog = null;
+let previouslyFocused = null;
+let confirmOnConfirm = null;
+
+const FOCUSABLE_SELECTOR = [
+  'button:not([disabled])',
+  'a[href]',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',');
+
+function focusableElements(dialog) {
+  return [...dialog.querySelectorAll(FOCUSABLE_SELECTOR)]
+    .filter((element) => !element.hidden && element.getAttribute('aria-hidden') !== 'true');
+}
+
+function openDialog(dialog, initialFocus) {
+  if (!dialog) return;
+  if (!activeDialog && document.activeElement instanceof HTMLElement) {
+    previouslyFocused = document.activeElement;
+  }
+  if (activeDialog && activeDialog !== dialog) closeDialog(activeDialog, false);
+
+  activeDialog = dialog;
+  dialog.classList.add('active');
+  dialog.setAttribute('aria-hidden', 'false');
+  requestAnimationFrame(() => {
+    const target = initialFocus || focusableElements(dialog)[0] || dialog;
+    target.focus?.();
+  });
+}
+
+function closeDialog(dialog, restoreFocus = true) {
+  if (!dialog) return;
+  dialog.classList.remove('active');
+  dialog.setAttribute('aria-hidden', 'true');
+
+  if (activeDialog === dialog) {
+    activeDialog = null;
+    if (restoreFocus && previouslyFocused?.isConnected) previouslyFocused.focus();
+    previouslyFocused = null;
+  }
+}
 
 function showLink() {
   // Prefill display text with the current selection, URL with an existing link.
@@ -11,12 +56,11 @@ function showLink() {
   const selectedText = editor.state.doc.textBetween(from, to, ' ');
   els.linkText.value = selectedText || '';
   els.linkUrl.value = editor.getAttributes('link').href || '';
-  els.linkDialog.classList.add('active');
-  els.linkUrl.focus();
+  openDialog(els.linkDialog, els.linkUrl);
 }
 
 function hideLink() {
-  els.linkDialog.classList.remove('active');
+  closeDialog(els.linkDialog);
   els.linkText.value = '';
   els.linkUrl.value = '';
 }
@@ -25,7 +69,7 @@ function insertLink() {
   const text = els.linkText.value.trim();
   let url = els.linkUrl.value.trim();
   if (!url) {
-    showToast('Please enter a URL', 'warning');
+    showToast('Please enter a URL.', 'warning');
     return;
   }
   if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
@@ -60,27 +104,62 @@ function insertLink() {
 
 function showExport() {
   if (!editor) return;
-  els.exportDialog.classList.add('active');
+  openDialog(els.exportDialog, els.formatBtns?.[0]);
 }
 
 function hideExport() {
-  els.exportDialog.classList.remove('active');
+  closeDialog(els.exportDialog);
 }
 
-let confirmOnConfirm = null;
-
-function showConfirm(title, message, onConfirm) {
+function showConfirm(title, message, onConfirm, options = {}) {
   if (!els.confirmDialog) return;
   els.confirmTitle.textContent = title;
   els.confirmMessage.textContent = message;
+  els.okConfirmBtn.textContent = options.confirmLabel || 'Confirm';
+  els.cancelConfirmBtn.textContent = options.cancelLabel || 'Cancel';
   confirmOnConfirm = onConfirm;
-  els.confirmDialog.classList.add('active');
+  openDialog(els.confirmDialog, els.cancelConfirmBtn);
 }
 
 function hideConfirm() {
   if (!els.confirmDialog) return;
-  els.confirmDialog.classList.remove('active');
+  closeDialog(els.confirmDialog);
   confirmOnConfirm = null;
+  els.okConfirmBtn.textContent = 'Confirm';
+  els.cancelConfirmBtn.textContent = 'Cancel';
+}
+
+function closeActiveDialog() {
+  if (activeDialog === els.linkDialog) hideLink();
+  else if (activeDialog === els.exportDialog) hideExport();
+  else if (activeDialog === els.confirmDialog) hideConfirm();
+}
+
+function handleDialogKeydown(event) {
+  if (!activeDialog) return;
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    closeActiveDialog();
+    return;
+  }
+  if (event.key !== 'Tab') return;
+
+  const focusable = focusableElements(activeDialog);
+  if (focusable.length === 0) {
+    event.preventDefault();
+    activeDialog.focus();
+    return;
+  }
+
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
 }
 
 export function initDialogs(config) {
@@ -88,14 +167,24 @@ export function initDialogs(config) {
   els = config.els;
   if (config.getNoteTitle) getTitle = config.getNoteTitle;
 
+  [els.linkDialog, els.exportDialog, els.confirmDialog].forEach((dialog) => {
+    dialog?.setAttribute('aria-hidden', 'true');
+  });
+
   els.insertLinkBtn?.addEventListener('click', insertLink);
   els.cancelLinkBtn?.addEventListener('click', hideLink);
+  els.linkUrl?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      insertLink();
+    }
+  });
 
   els.exportBtn?.addEventListener('click', showExport);
   els.cancelExportBtn?.addEventListener('click', hideExport);
-  els.formatBtns?.forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      const format = e.currentTarget.dataset.format;
+  els.formatBtns?.forEach((button) => {
+    button.addEventListener('click', (event) => {
+      const format = event.currentTarget.dataset.format;
       exportNote(editor, getTitle(), format);
       hideExport();
     });
@@ -103,16 +192,18 @@ export function initDialogs(config) {
 
   els.cancelConfirmBtn?.addEventListener('click', hideConfirm);
   els.okConfirmBtn?.addEventListener('click', () => {
-    confirmOnConfirm?.();
+    const action = confirmOnConfirm;
     hideConfirm();
+    action?.();
   });
 
   // Close dialogs on overlay click.
   [els.linkDialog, els.exportDialog, els.confirmDialog].forEach((overlay) => {
-    overlay?.addEventListener('click', (e) => {
-      if (e.target === overlay) overlay.classList.remove('active');
+    overlay?.addEventListener('click', (event) => {
+      if (event.target === overlay) closeActiveDialog();
     });
   });
+  document.addEventListener('keydown', handleDialogKeydown);
 }
 
 export function openLinkDialog() {
@@ -127,26 +218,32 @@ export function showToast(message, type = 'info') {
 
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
+  toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
 
   let iconClass = 'fa-info-circle';
   if (type === 'error') iconClass = 'fa-exclamation-circle';
   else if (type === 'success') iconClass = 'fa-check-circle';
   else if (type === 'warning') iconClass = 'fa-exclamation-triangle';
 
-  toast.innerHTML = `<i class="fas ${iconClass}"></i> <span class="toast-text">${message}</span>`;
+  const icon = document.createElement('i');
+  icon.className = `fas ${iconClass}`;
+  icon.setAttribute('aria-hidden', 'true');
+  const text = document.createElement('span');
+  text.className = 'toast-text';
+  text.textContent = String(message);
+  toast.append(icon, text);
   container.appendChild(toast);
 
-  // Trigger reflow/animation
-  setTimeout(() => {
-    toast.classList.add('visible');
-  }, 10);
+  // Trigger reflow/animation.
+  setTimeout(() => toast.classList.add('visible'), 10);
 
-  // Remove after 3s
+  // Errors linger longer than confirmations — they may need acting on.
+  const duration = type === 'error' ? 6000 : 3000;
   setTimeout(() => {
     toast.classList.remove('visible');
     toast.classList.add('fade-out');
-    toast.addEventListener('transitionend', () => {
-      toast.remove();
-    });
-  }, 3000);
+    const remove = () => toast.remove();
+    toast.addEventListener('transitionend', remove, { once: true });
+    setTimeout(remove, 300);
+  }, duration);
 }
