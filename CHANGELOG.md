@@ -35,6 +35,26 @@ browser cache on every change.
 Dark mode (`rosieWriteDarkMode`) and editor font size (`rosieWriteFontSize`) still read
 the same keys, so those preferences should carry over.
 
+## Changes in `v2.0.1:`
+
+- **UI:** `/about` no longer redirect-loops on Cloudflare Pages. Pretty URLs already
+  serve `about.html`; the extra `_redirects` rewrite is gone.
+- **UI:** Mobile notes rail can close with a close button, Escape, or tapping the
+  already-open note. The hamburger was covered by the overlay rail.
+- **UI:** About and 404 primary buttons use `--accent-foreground` so dark-mode
+  contrast stays readable.
+- **Misc:** Pasting formatted text is no longer replaced by a clipboard preview image.
+- **Misc:** Autosave no longer resurrects a note deleted in another tab; on-screen
+  text is kept as a new note.
+- **Misc:** Link dialog accepts `mailto:` and `tel:` URLs instead of prefixing
+  `https://`. Empty URL unsets an existing link.
+- **Misc:** Open dialogs and the visible notes rail omit `aria-hidden="false"`, which
+  hid them from some screen readers.
+- **Security:** Editor paste now drops remote `img` URLs the same way import does.
+- **Codebase:** Vite `appType: 'mpa'` plus a `/about` rewrite so local preview matches
+  production pretty URLs.
+- **Docs:** Deploy notes no longer mention the `_redirects` about rewrite.
+
 ## Changes in `v2.0.0:`
 
 ### Welcome to ROSIE-WRITE v2!

@@ -7,8 +7,8 @@ const KEY = 'rosieWriteDarkMode';
 function applyButtonIcon(btn, isDark) {
   if (!btn) return;
   btn.innerHTML = isDark
-    ? '<i class="fas fa-sun"></i>'
-    : '<i class="fas fa-moon"></i>';
+    ? '<i class="fas fa-sun" aria-hidden="true"></i>'
+    : '<i class="fas fa-moon" aria-hidden="true"></i>';
 }
 
 export function initTheme(toggleBtn) {
@@ -20,7 +20,6 @@ export function initTheme(toggleBtn) {
     isDark =
       window.matchMedia &&
       window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (isDark) writePref(KEY, 'true');
   }
   document.body.classList.toggle('dark-mode', isDark);
   applyButtonIcon(toggleBtn, isDark);
