@@ -1,0 +1,2 @@
+# Clean URL for the about page (Vite emits /about.html).
+/about    /about.html    200

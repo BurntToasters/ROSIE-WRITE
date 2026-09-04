@@ -1,0 +1,30 @@
+{
+  "name": "rosie-write",
+  "version": "2.0.0",
+  "description": "Simple web-based note creator/editor using localStorage",
+  "type": "module",
+  "license": "MPL-2.0",
+  "homepage": "https://write.rosie.run",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BurntToasters/ROSIE-WRITE"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "6.7.2",
+    "@tiptap/core": "3.24.0",
+    "@tiptap/extension-image": "3.24.0",
+    "@tiptap/extension-placeholder": "3.24.0",
+    "@tiptap/extension-text-align": "3.24.0",
+    "@tiptap/extension-text-style": "3.24.0",
+    "@tiptap/pm": "3.24.0",
+    "@tiptap/starter-kit": "3.24.0"
+  },
+  "devDependencies": {
+    "vite": "^8.2.2"
+  }
+}
