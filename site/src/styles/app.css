@@ -37,6 +37,11 @@
   white-space: nowrap;
 }
 
+.rail-close {
+  display: none;
+  margin-left: auto;
+}
+
 .rail-actions {
   display: flex;
   gap: 4px;
@@ -393,6 +398,9 @@
     left: 0;
   }
   .rail-toggle {
+    display: inline-flex;
+  }
+  .rail-close {
     display: inline-flex;
   }
   .page {

@@ -31,7 +31,7 @@ function openDialog(dialog, initialFocus) {
 
   activeDialog = dialog;
   dialog.classList.add('active');
-  dialog.setAttribute('aria-hidden', 'false');
+  dialog.removeAttribute('aria-hidden');
   requestAnimationFrame(() => {
     const target = initialFocus || focusableElements(dialog)[0] || dialog;
     target.focus?.();
@@ -69,10 +69,15 @@ function insertLink() {
   const text = els.linkText.value.trim();
   let url = els.linkUrl.value.trim();
   if (!url) {
+    if (editor.isActive('link')) {
+      hideLink();
+      editor.chain().focus().unsetLink().run();
+      return;
+    }
     showToast('Please enter a URL.', 'warning');
     return;
   }
-  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  if (!/^(https?:|mailto:|tel:)/i.test(url)) url = 'https://' + url;
   hideLink();
 
   const { from, to, empty } = editor.state.selection;

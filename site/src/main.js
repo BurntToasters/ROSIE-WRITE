@@ -46,12 +46,13 @@ function init() {
   const els = {
     app: $('app'),
     noteRail: $('noteRail'),
+    railToggle: $('railToggle'),
+    railClose: $('railClose'),
     pageContent: $('pageContent'),
     noteTitle: $('noteTitle'),
     saveStatus: $('saveStatus'),
     wordCount: $('wordCount'),
     // sidebar
-    railToggle: $('railToggle'),
     railList: $('railList'),
     railSearch: $('noteSearch'),
     newBtn: $('newNote'),
@@ -87,7 +88,8 @@ function init() {
     if (!els.noteRail) return;
     const hidden = mobileQuery.matches && !els.app.classList.contains('rail-open');
     els.noteRail.inert = hidden;
-    els.noteRail.setAttribute('aria-hidden', String(hidden));
+    if (hidden) els.noteRail.setAttribute('aria-hidden', 'true');
+    else els.noteRail.removeAttribute('aria-hidden');
   }
 
   function setRailOpen(open) {
@@ -100,6 +102,14 @@ function init() {
 
   els.railToggle?.addEventListener('click', () => {
     setRailOpen(!els.app.classList.contains('rail-open'));
+  });
+  els.railClose?.addEventListener('click', () => setRailOpen(false));
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    if (!mobileQuery.matches || !els.app.classList.contains('rail-open')) return;
+    if (document.querySelector('.dialog.active')) return;
+    event.preventDefault();
+    setRailOpen(false);
   });
   mobileQuery.addEventListener('change', syncRailVisibility);
   syncRailVisibility();
@@ -171,10 +181,13 @@ function init() {
       setSaveStatus(STATUS.saved);
       // A clean write means earlier problems are resolved; allow warnings again.
       toastState.clear();
-    } else {
-      setSaveStatus(STATUS.failed);
+      return true;
     }
-    return saved;
+    // Another tab deleted this id. Don't claim a failed save of a gone note —
+    // keep what's on screen as a new note.
+    if (!store.get(id)) return rescueInto(payload);
+    setSaveStatus(STATUS.failed);
+    return false;
   }
 
   // Load a note into the editor + title (without triggering autosave).
@@ -282,7 +295,12 @@ function init() {
   });
 
   els.pageContent.addEventListener('paste', (event) => {
-    const items = event.clipboardData?.items;
+    const data = event.clipboardData;
+    if (!data) return;
+    // Word/web paste often includes a bitmap preview next to text/html. Prefer
+    // the rich text; only intercept a standalone image copy.
+    if (data.getData('text/html') || data.getData('text/plain')) return;
+    const items = data.items;
     if (!items) return;
     for (const item of items) {
       if (item.type.startsWith('image/')) {
@@ -326,6 +344,9 @@ function init() {
     },
     onSwitch: loadNote,
     saveCurrent,
+    onSelectCurrent: () => {
+      if (mobileQuery.matches) setRailOpen(false);
+    },
   });
 
   const storageMessages = {
@@ -393,6 +414,7 @@ function init() {
         const imported = fileToHtml(file, reader.result);
         if (!saveCurrent()) return;
 
+        if (els.railSearch) els.railSearch.value = '';
         const note = store.create();
         if (!note) return;
         loadNote(note);

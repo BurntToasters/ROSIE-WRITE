@@ -6,6 +6,7 @@ import { showConfirm, showToast } from './dialogs.js';
 let els = {};
 let onSwitch = null; // (note) => void — load a note into the editor
 let saveCurrent = null; // () => boolean — flush the open note before switching
+let onSelectCurrent = null; // () => void — current note tapped again (close mobile rail)
 
 function fmtDate(iso) {
   const date = new Date(iso);
@@ -99,7 +100,10 @@ function render() {
 }
 
 function selectNote(id) {
-  if (id === store.currentId()) return;
+  if (id === store.currentId()) {
+    onSelectCurrent?.();
+    return;
+  }
   if (saveCurrent?.() === false) return;
   const note = store.get(id);
   if (note) onSwitch?.(note);
@@ -109,9 +113,11 @@ export function initSidebar(config) {
   els = config.els;
   onSwitch = config.onSwitch;
   saveCurrent = config.saveCurrent;
+  onSelectCurrent = config.onSelectCurrent;
 
   els.newBtn?.addEventListener('click', () => {
     if (saveCurrent?.() === false) return;
+    if (els.search) els.search.value = '';
     const note = store.create();
     if (note) onSwitch?.(note);
   });

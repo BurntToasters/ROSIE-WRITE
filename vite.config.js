@@ -12,13 +12,37 @@ const { version: appVersion } = JSON.parse(
   readFileSync(resolve(configDir, 'package.json'), 'utf8')
 );
 
+// Cloudflare Pages already serves about.html at /about (Pretty URLs). Vite
+// does not, so map the pretty path in dev/preview. Do not put this in
+// _redirects — a 200 rewrite there fights Pages and 308-loops /about.
+function aboutPrettyUrl() {
+  function rewrite(req, _res, next) {
+    const url = req.url || '';
+    if (url === '/about' || url.startsWith('/about?')) {
+      req.url = url.replace(/^\/about/, '/about.html');
+    }
+    next();
+  }
+  return {
+    name: 'about-pretty-url',
+    configureServer(server) {
+      server.middlewares.use(rewrite);
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use(rewrite);
+    },
+  };
+}
+
 export default defineConfig({
   root: siteDir,
   base: '/',
+  appType: 'mpa',
   publicDir: resolve(siteDir, 'public'),
   define: {
     __APP_VERSION__: JSON.stringify(appVersion),
   },
+  plugins: [aboutPrettyUrl()],
   build: {
     outDir: resolve(configDir, 'dist'),
     emptyOutDir: true,

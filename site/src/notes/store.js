@@ -343,6 +343,10 @@ export function save(id, { title, content, searchText = '' }) {
     return false;
   }
   const ok = commit((base) => {
+    if (!(id in base)) {
+      // Another tab deleted this note. Do not write it back.
+      return base;
+    }
     const external = base[id];
     const updated = {
       ...(external || previous),
@@ -382,6 +386,10 @@ export function save(id, { title, content, searchText = '' }) {
   });
 
   if (!ok) return false;
+  if (!state.notes[id]) {
+    notify();
+    return false;
+  }
   notify();
   return true;
 }

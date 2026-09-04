@@ -8,6 +8,19 @@ import Image from '@tiptap/extension-image';
 const MIN_WIDTH = 50;
 
 export const ResizableImage = Image.extend({
+  parseHTML() {
+    return [
+      {
+        tag: 'img[src]',
+        getAttrs: (element) => {
+          const src = (element.getAttribute?.('src') || element.src || '').trim();
+          if (/^data:image\/(?:png|jpe?g|gif|webp);base64,/i.test(src)) return null;
+          return false;
+        },
+      },
+    ];
+  },
+
   addAttributes() {
     return {
       ...this.parent?.(),

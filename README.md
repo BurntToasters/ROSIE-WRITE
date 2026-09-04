@@ -29,7 +29,7 @@ dist/                          # build output (gitignored)
 site/
   index.html  about.html  404.html   # pages (Vite entries)
   src/                               # ES modules (editor, notes, ui, io, styles)
-  public/                            # static assets + _redirects (copied to dist/)
+  public/                            # static assets (copied to dist/)
 ```
 
 Vite is configured with `root: site/`, building to `/dist` at the repo root.
@@ -47,11 +47,13 @@ npm run preview  # preview the production build
 
 Static build. On Cloudflare Pages:
 
-- **Root directory:** *(repo root — leave default)*
+- **Root directory:** *(repo root — leave default. Do not set this to `site/`.)*
 - **Build command:** `npm run build`
 - **Build output directory:** `dist`
+- **Node:** `^20.19.0` or `>=22.12.0` (Vite 8)
 
-Vite copies `site/public/` (logo, favicon, `_redirects`) into `dist/` verbatim; the
-`_redirects` file maps `/about` to `/about.html`.
+Vite copies `site/public/` (logo, favicon) into `dist/` verbatim. Cloudflare Pages
+Pretty URLs serve `about.html` at `/about` — do not add a `_redirects` rewrite for
+that path; it 308-loops with Pretty URLs.
 
 Released under the Mozilla Public License 2.0.
